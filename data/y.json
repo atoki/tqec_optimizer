@@ -1,0 +1,29 @@
+{
+  "bits"   : [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14],
+  "inputs" : [],
+  "outputs": [0],
+  "initializations": [
+      {
+          "bit" : 0,
+          "type": "x"
+      }
+  ],
+  "measurements": [
+      {
+          "bit" : 1,
+          "type": "x"
+      }
+
+  ],
+  "cnots": [
+      {
+          "controls": [0],
+          "targets" : [6]
+      },
+      {
+          "controls": [2],
+          "targets" : [4]
+      }
+  ]
+}
+
