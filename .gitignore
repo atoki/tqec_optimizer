@@ -1,0 +1,9 @@
+*.[a|o]
+*~
+\#*\#
+*.bak
+/*.json
+**/bin/*
+**/build/*
+**/.idea/*
+.python-version
