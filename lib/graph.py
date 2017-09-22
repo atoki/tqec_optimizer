@@ -24,16 +24,21 @@ class Node:
 
 
 class Edge:
-    def __init__(self, node1, node2):
+    def __init__(self, node1, node2, category):
         assert node1.type != node2.type, 'node1 and node2 must be the same type'
 
         self.type = node1.type
+        self.type = category
         self.node1 = node1
         self.node2 = node2
 
     @property
     def type(self):
         return self.type
+
+    @property
+    def category(self):
+        return self.category
 
     @property
     def node1(self):
@@ -71,11 +76,37 @@ class Graph:
 
     def __create(self):
         self.node_array = [[[self._new_node(x, y, z)
-                             for z in range(self.min_z,self. max_z)] \
-                            for y in range(self.min_y,self. max_y)] \
-                           for x in range(self.min_x,self. max_x)]
+                             for z in range(self.min_z, self. max_z)] \
+                            for y in range(self.min_y, self. max_y)] \
+                           for x in range(self.min_x, self. max_x)]
 
-    def __create_bits_line(self):
+        self.edge_list = []
+
+    def __create_bit_lines(self):
+        """
+        初期化回路のグラフ化に使用
+        """
+        pass
+
+    def __create_bridges(self):
+        """
+        初期化と観測の追加
+        初期化回路のグラフ化に使用
+        """
+        pass
+
+    def __create_injectors(self):
+        """
+        インジェクタと外部入出力の追加
+        初期化回路のグラフ化に使用
+        """
+        pass
+
+    def __create_braidings(self):
+        """
+        ブレイディング(Controlled NOT)の追加
+        初期化回路のグラフ化に使用
+        """
         pass
 
     def __new_node(self, x, y, z):
@@ -83,4 +114,7 @@ class Graph:
 
         return node
 
+    def __new__edge(self, node1, node2, category):
+        edge = Edge(node1, node2, category)
 
+        return edge
