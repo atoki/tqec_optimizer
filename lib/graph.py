@@ -3,12 +3,20 @@ from .position import Position
 
 class Node:
     def __init__(self, type, x, y, z):
+        self.ids = []
         self.type = type
         self.pos = Position(x, y, z)
 
-    @property
-    def type(self):
-        return self.type
+    def add_id(self, id):
+        self.ids.append(id)
+
+    # @property
+    # def set_type(self, type):
+    #     self.type = type
+    #
+    # @property
+    # def type(self):
+    #     return self.type
 
     @property
     def x(self):
@@ -22,29 +30,38 @@ class Node:
     def z(self):
         return self.pos.z
 
+    def debug(self):
+        print("(", self.type, ",", self.pos.x, ",", self.pos.y, ",", self.pos.z, ")")
+
 
 class Edge:
     def __init__(self, node1, node2, category):
-        assert node1.type != node2.type, 'node1 and node2 must be the same type'
-
+        self.ids = []
         self.type = node1.type
         self.type = category
         self.node1 = node1
         self.node2 = node2
 
-    @property
-    def type(self):
-        return self.type
+    def add_id(self, id):
+        self.ids.append(id)
+
+    # @property
+    # def set_type(self, type):
+    #     self.type = type
+    #
+    # @property
+    # def type(self):
+    #     return self.type
 
     @property
     def category(self):
         return self.category
 
-    @property
+    # @property
     def node1(self):
         return self.node1
 
-    @property
+    # @property
     def node2(self):
         return self.node2
 
@@ -63,6 +80,13 @@ class Graph:
     座標系はtqec_viewerに準拠(=OpenGL(右手座標系))
     """
     def __init__(self, circuit, space):
+        """
+        コンストラクタ
+
+        :param circuit Circuit
+        :param space 座標系において余分に確保する空間長
+        """
+
         self.circuit = circuit
         self.space = space
         self.max_x = len(circuit.cnots) * 2 + space
@@ -75,18 +99,41 @@ class Graph:
         self.__create()
 
     def __create(self):
-        self.node_array = [[[self._new_node(x, y, z)
+        self.node_array = [[[self.__new_node(x, y, z)
                              for z in range(self.min_z, self. max_z)] \
                             for y in range(self.min_y, self. max_y)] \
                            for x in range(self.min_x, self. max_x)]
 
+        self.node_list = []
         self.edge_list = []
+
+        self.__create_bit_lines()
+        self.__create_bridges()
+        self.__create_injectors()
+        self.__create_braidings()
 
     def __create_bit_lines(self):
         """
+        primal型 defect
         初期化回路のグラフ化に使用
         """
-        pass
+        upper = 1
+        lower = 0
+        last_upper_node = None
+        last_lower_node = None
+        for z in range(0, len(self.circuit.bits) * 2, 2):
+            for x in range(0, self.circuit.length, 2):
+                upper_node = self.node_array[x][upper][z]
+                lower_node = self.node_array[x][lower][z]
+                upper_node.type = "primal"
+                lower_node.type = "primal"
+                self.node_list.append(upper_node)
+                self.node_list.append(lower_node)
+                if last_upper_node != None or last_lower_node != None:
+                    self.edge_list.append(self.__new__edge(upper_node, last_upper_node, "line"))
+                    self.edge_list.append(self.__new__edge(lower_node, last_lower_node, "line"))
+                last_upper_node = upper_node
+                last_lower_node = lower_node
 
     def __create_bridges(self):
         """
@@ -118,3 +165,8 @@ class Graph:
         edge = Edge(node1, node2, category)
 
         return edge
+
+    def debug(self):
+        for node in self.node_list:
+            node.debug()
+

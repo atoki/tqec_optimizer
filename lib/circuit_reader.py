@@ -49,6 +49,8 @@ class CircuitReader:
 
             self.error('syntax error')
 
+        self.circuit.update()
+
         return self.circuit
 
     def __read_bits(self, key, value):

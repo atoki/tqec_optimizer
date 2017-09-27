@@ -12,7 +12,9 @@ from lib.graph import Graph
 def main():
     file_name = "y.json"
     circuit = CircuitReader().read_circuit(file_name)
+    circuit.debug()
     graph = Graph(circuit, 2)
+    graph.debug()
 
 
 if __name__ == '__main__':
