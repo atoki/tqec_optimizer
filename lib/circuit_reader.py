@@ -1,7 +1,7 @@
 import json
 from .circuit import Circuit
 
-path = '/Users/Askt/Study/tqec_optimizer/data/'
+path = '/home/askt/Study/tqec_optimizer/data/'
 
 
 class CircuitReader:
@@ -13,7 +13,7 @@ class CircuitReader:
         """
         コンストラクタ
         """
-        self.circuit = Circuit()
+        self._circuit = Circuit()
 
     def read_circuit(self, file_name):
         """
@@ -49,16 +49,16 @@ class CircuitReader:
 
             self.error('syntax error')
 
-        self.circuit.update()
+        self._circuit.update()
 
-        return self.circuit
+        return self._circuit
 
     def __read_bits(self, key, value):
         if key != "bits":
             return False
 
         for element in value:
-            self.circuit.add_bits(element)
+            self._circuit.add_bits(element)
 
         return True
 
@@ -67,7 +67,7 @@ class CircuitReader:
             return False
 
         for element in value:
-            self.circuit.add_inputs(element)
+            self._circuit.add_inputs(element)
 
         return True
 
@@ -76,7 +76,7 @@ class CircuitReader:
             return False
 
         for element in value:
-            self.circuit.add_outputs(element)
+            self._circuit.add_outputs(element)
 
         return True
 
@@ -85,7 +85,7 @@ class CircuitReader:
             return False
 
         for element in value:
-            self.circuit.add_initializations(element)
+            self._circuit.add_initializations(element)
 
         return True
 
@@ -94,7 +94,7 @@ class CircuitReader:
             return False
 
         for element in value:
-            self.circuit.add_measurements(element)
+            self._circuit.add_measurements(element)
 
         return True
 
@@ -103,6 +103,6 @@ class CircuitReader:
             return False
 
         for element in value:
-            self.circuit.add_cnots(element)
+            self._circuit.add_cnots(element)
 
         return True

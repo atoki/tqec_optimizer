@@ -7,6 +7,7 @@ import sys
 from lib.circuit_reader import CircuitReader
 from lib.circuit import Circuit
 from lib.graph import Graph
+from lib.circuit_writer import CircuitWriter
 
 
 def main():
@@ -14,7 +15,9 @@ def main():
     circuit = CircuitReader().read_circuit(file_name)
     circuit.debug()
     graph = Graph(circuit, 2)
-    graph.debug()
+    # graph.debug()
+    writer = CircuitWriter(graph)
+    writer.write()
 
 
 if __name__ == '__main__':
