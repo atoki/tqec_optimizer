@@ -16,5 +16,23 @@ class Position:
     def z(self):
         return self._z
 
+    def incx(self, n=1):
+        self._x += n
+
+    def decx(self, n=1):
+        self._x -= n
+
+    def incy(self, n=1):
+        self._y += n
+
+    def decy(self, n=1):
+        self._y -= n
+
+    def incz(self, n=1):
+        self._z += n
+
+    def decz(self, n=1):
+        self._z -= n
+
     def to_array(self):
         return [self._x, self._y, self._z]

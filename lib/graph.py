@@ -49,7 +49,7 @@ class Edge:
         self._ids.append(id)
 
     def set_type(self, type):
-        self.type = type
+        self._type = type
 
     @property
     def type(self):
@@ -121,8 +121,9 @@ class Graph:
         upper = 2
         lower = 0
         type = "primal"
-        print(self._circuit.length)
-        for z in range(0, self._circuit.width + 1, 2):
+        print("width: ", self._circuit.width)
+        print("length:", self._circuit.length)
+        for z in range(0, self._circuit.width, 2):
             last_upper_node = None
             last_lower_node = None
             for x in range(0, self._circuit.length + 1, 2):
@@ -170,8 +171,64 @@ class Graph:
         """
         ブレイディング(Controlled NOT)の追加
         初期化回路のグラフ化に使用
+
         """
-        pass
+
+        type = "dual"
+        space = 2
+        for no, cnot in enumerate(self._circuit.cnots):
+            node_array = []
+            tbit_no_array = cnot["targets"]
+            cbit_no = cnot["control"]
+            bit_no_array = tbit_no_array
+            bit_no_array.append(cbit_no)
+            max_bit_no = max(bit_no_array)
+            min_bit_no = min(bit_no_array)
+
+            node = self.__new_node(type, no * 4 + 1, 1, cbit_no * 2 - 1)
+            node_array.append(node)
+            node.pos.incz(space)
+            self.__new_node(node.type, node.x, node.y, node.z)
+            node_array.append(node)
+
+            for z in range(min_bit_no + 2, max_bit_no + 1, 2):
+                if z in tbit_no_array:
+                    if node.y != 1:
+                        node.pos.decy(2)
+                        self.__new_node(node.type, node.x, node.y, node.z)
+                        node_array.append(node)
+                    node.pos.incz(2)
+                    self.__new_node(node.type, node.x, node.y, node.z)
+                    node_array.append(node)
+
+                else:
+                    if node.y == 1:
+                        node.pos.incy(2)
+                        self.__new_node(node.type, node.x, node.y, node.z)
+                        node_array.append(node)
+
+                    node.pos.incz(2)
+                    self.__new_node(node.type, node.x, node.y, node.z)
+                    node_array.append(node)
+
+            node.pos.incy(2)
+            self.__new_node(node.type, node.x, node.y, node.z)
+            node_array.append(node)
+            node.pos.incx(2)
+            self.__new_node(node.type, node.x, node.y, node.z)
+            node_array.append(node)
+
+            for z in range(max_bit_no, cbit_no, -2):
+                node.pos.decz(2)
+                self.__new_node(node.type, node.x, node.y, node.z)
+                node_array.append(node)
+
+            node.pos.decy(2)
+            self.__new_node(node.type, node.x, node.y, node.z)
+            node_array.append(node)
+            node.pos.decz(2)
+            self.__new_node(node.type, node.x, node.y, node.z)
+            node_array.append(node)
 
     @property
     def node_list(self):
