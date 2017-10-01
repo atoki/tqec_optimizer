@@ -1,6 +1,6 @@
 {
-  "bits"   : [0, 1, 2],
-  "inputs" : [0],
+  "bits"   : [0, 1, 2, 3, 4],
+  "inputs" : [2],
   "outputs": [0],
   "initializations": [
       {
@@ -17,7 +17,15 @@
   "cnots": [
       {
           "control": 0,
-          "targets" : [1]
+          "targets" : [2, 3, 4]
+      },
+      {
+          "control": 4,
+          "targets" : [0, 1, 2, 3]
+      },
+      {
+          "control": 0,
+          "targets" : [2, 4]
       }
   ]
 }
