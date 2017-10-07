@@ -1,0 +1,21 @@
+{
+    "bits"   : [0, 1],
+    "inputs" : [0,1],
+    "outputs": [0,1],
+    "cnots": [
+        {
+            "control": 0,
+            "targets" : [1]
+        },
+        {
+            "control": 1,
+            "targets" : [0]
+        },
+        {
+            "control": 0,
+            "targets" : [1]
+        }
+    ]
+  }
+  
+  
