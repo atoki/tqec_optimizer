@@ -95,13 +95,12 @@ class Graph:
 
         self._circuit = circuit
         self._space = space
-        self._max_x = len(circuit._cnots) * 2 + space
-        self._min_x = 0 - space
+        self._max_x = len(circuit._bits) * 2 - 1 + space
+        self._min_x = -1 - space
         self._max_y = 3 + space
         self._min_y = -1 - space
-        self._max_z = len(circuit._bits) * 2 - 1 + space
-        self._min_z = -1 - space
-
+        self._max_z = len(circuit._operations) * 2 + space
+        self._min_z = 0 - space
         self.__create()
 
     def __create(self):
@@ -111,7 +110,7 @@ class Graph:
         self.__create_bit_lines()
         self.__create_bridges()
         self.__create_injectors()
-        self.__create_braidings()
+        self.__create_operations()
 
     def __create_bit_lines(self):
         """
@@ -142,18 +141,28 @@ class Graph:
         """
         type = "primal"
         for init in self._circuit.initializations:
-            node1 = self.__new_node(type, init["bit"] * 2, 0, 0)
-            node2 = self.__new_node(type, init["bit"] * 2, 2, 0)
-            self.__new__edge(node1, node2, "bridge")
+            if init["type"] == "z":
+                node1 = self.__new_node(type, init["bit"] * 2, 0, 0)
+                node2 = self.__new_node(type, init["bit"] * 2, 2, 0)
+                self.__new__edge(node1, node2, "bridge")
 
         for meas in self._circuit.measurements:
-            node1 = self.__new_node(type, meas["bit"] * 2, 0, self._circuit.length)
-            node2 = self.__new_node(type, meas["bit"] * 2, 2, self._circuit.length)
-            self.__new__edge(node1, node2, "bridge")
+            if meas["type"] == "z":
+                node1 = self.__new_node(type, meas["bit"] * 2, 0, self._circuit.length)
+                node2 = self.__new_node(type, meas["bit"] * 2, 2, self._circuit.length)
+                self.__new__edge(node1, node2, "bridge")
+            else:
+                upper_node1 = Node(type, meas["bit"] * 2, 2, self._circuit.length)
+                lower_node1 = Node(type, meas["bit"] * 2, 0, self._circuit.length)
+                upper_node2 = self.__new_node(type, meas["bit"] * 2, 2, self._circuit.length + 2)
+                lower_node2 = self.__new_node(type, meas["bit"] * 2, 0, self._circuit.length + 2)
+                self.__new__edge(upper_node1, upper_node2, "line")
+                self.__new__edge(lower_node1, lower_node2, "line")
+
 
     def __create_injectors(self):
         """
-        インジェクタと外部入出力の追加
+        外部入出力の追加
         初期回路のグラフ化に使用
         """
         type = "primal"
@@ -167,7 +176,30 @@ class Graph:
             node2 = self.__new_node(type, x * 2, 2, self._circuit.length)
             self.__new__edge(node1, node2, "cap")
 
-    def __create_braidings(self):
+    def __create_operations(self):
+        """
+        CNOTとState Injectionを追加する
+
+        """
+        no = 0
+        for operation in self._circuit.operations:
+            if operation["type"] == "cnot":
+                self.__create_braidings(no, operation)
+                no += 1
+            else:
+                self.__create_state_injection(no, operation)
+
+    def __create_state_injection(self, no, operation):
+        """
+        State Injectionの追加
+        初期回路のグラフ化に使用
+        """
+        type = "primal"
+        node1 = Node(type, operation["target"] * 2, 0, no * 4)
+        node2 = Node(type, operation["target"] * 2, 2, no * 4)
+        self.__new__edge(node1, node2, "pin")
+
+    def __create_braidings(self, no, cnot):
         """
         ブレイディング(Controlled NOT)の追加
         初期回路のグラフ化に使用
@@ -177,69 +209,68 @@ class Graph:
 
         type = "dual"
         space = 2
-        for no, cnot in enumerate(self._circuit.cnots):
-            node_array = []
-            tbit_no_array = cnot["targets"]
-            cbit_no = cnot["control"]
-            bit_no_array = tbit_no_array
-            bit_no_array.append(cbit_no)
-            max_bit_no = max(bit_no_array)
-            min_bit_no = min(bit_no_array)
-            d = 1.0 if (cbit_no < tbit_no_array[0]) else -1.0
+        node_array = []
+        tbit_no_array = cnot["targets"]
+        cbit_no = cnot["control"]
+        bit_no_array = tbit_no_array
+        bit_no_array.append(cbit_no)
+        max_bit_no = max(bit_no_array)
+        min_bit_no = min(bit_no_array)
+        d = 1.0 if (cbit_no < tbit_no_array[0]) else -1.0
 
-            # add bridge
-            upper = Node("primal", cbit_no * 2, 2, no * 4 + 2)
-            lower = Node("primal", cbit_no * 2, 0, no * 4 + 2)
-            self.__new__edge(upper, lower, "bridge")
+        # add bridge
+        upper = Node("primal", cbit_no * 2, 2, no * 4 + 2)
+        lower = Node("primal", cbit_no * 2, 0, no * 4 + 2)
+        self.__new__edge(upper, lower, "bridge")
 
-            node = self.__new_node(type, cbit_no * 2 - 1 * d, 1, no * 4 + 2 - d)
-            node_array.append(self.__new_node(node.type, node.x, node.y, node.z))
-            node.pos.incx(space * d)
-            node_array.append(self.__new_node(node.type, node.x, node.y, node.z))
+        node = self.__new_node(type, cbit_no * 2 - 1 * d, 1, no * 4 + 2 - d)
+        node_array.append(self.__new_node(node.type, node.x, node.y, node.z))
+        node.pos.incx(space * d)
+        node_array.append(self.__new_node(node.type, node.x, node.y, node.z))
 
-            start = min_bit_no if (cbit_no < tbit_no_array[0]) else max_bit_no
-            x = start + 1 * d
-            limit = max_bit_no if (cbit_no < tbit_no_array[0]) else min_bit_no
-            while x != limit + 1 * d:
-                if x in tbit_no_array:
-                    if node.y != 1:
-                        node.pos.decy(space)
-                        node_array.append(self.__new_node(node.type, node.x, node.y, node.z))
-                    node.pos.incx(space * d)
+        start = min_bit_no if (cbit_no < tbit_no_array[0]) else max_bit_no
+        x = start + 1 * d
+        limit = max_bit_no if (cbit_no < tbit_no_array[0]) else min_bit_no
+        while x != limit + 1 * d:
+            if x in tbit_no_array:
+                if node.y != 1:
+                    node.pos.decy(space)
                     node_array.append(self.__new_node(node.type, node.x, node.y, node.z))
-
-                else:
-                    if node.y == 1:
-                        node.pos.incy(space)
-                        node_array.append(self.__new_node(node.type, node.x, node.y, node.z))
-
-                    node.pos.incx(space * d)
-                    node_array.append(self.__new_node(node.type, node.x, node.y, node.z))
-                x += 1 * d
-
-            node.pos.incy(space)
-            node_array.append(self.__new_node(node.type, node.x, node.y, node.z))
-            node.pos.incz(space * d)
-            node_array.append(self.__new_node(node.type, node.x, node.y, node.z))
-
-            x = max_bit_no if (cbit_no < tbit_no_array[0]) else min_bit_no
-            while x != cbit_no:
-                node.pos.decx(space * d)
+                node.pos.incx(space * d)
                 node_array.append(self.__new_node(node.type, node.x, node.y, node.z))
-                x -= 1 * d
 
-            node.pos.decy(space)
-            node_array.append(self.__new_node(node.type, node.x, node.y, node.z))
+            else:
+                if node.y == 1:
+                    node.pos.incy(space)
+                    node_array.append(self.__new_node(node.type, node.x, node.y, node.z))
+
+                node.pos.incx(space * d)
+                node_array.append(self.__new_node(node.type, node.x, node.y, node.z))
+            x += 1 * d
+
+        node.pos.incy(space)
+        node_array.append(self.__new_node(node.type, node.x, node.y, node.z))
+        node.pos.incz(space * d)
+        node_array.append(self.__new_node(node.type, node.x, node.y, node.z))
+
+        x = max_bit_no if (cbit_no < tbit_no_array[0]) else min_bit_no
+        while x != cbit_no:
             node.pos.decx(space * d)
             node_array.append(self.__new_node(node.type, node.x, node.y, node.z))
+            x -= 1 * d
 
-            first_node = node_array[0]
-            last_node = None
-            for node in node_array:
-                if last_node is not None:
-                    self.__new__edge(node, last_node, "edge")
-                last_node = node
-            self.__new__edge(first_node, last_node, "edge")
+        node.pos.decy(space)
+        node_array.append(self.__new_node(node.type, node.x, node.y, node.z))
+        node.pos.decx(space * d)
+        node_array.append(self.__new_node(node.type, node.x, node.y, node.z))
+
+        first_node = node_array[0]
+        last_node = None
+        for node in node_array:
+            if last_node is not None:
+                self.__new__edge(node, last_node, "edge")
+            last_node = node
+        self.__new__edge(first_node, last_node, "edge")
 
     @property
     def node_list(self):
@@ -267,4 +298,3 @@ class Graph:
 
         for edge in self._edge_list:
             edge.debug()
-

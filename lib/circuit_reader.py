@@ -1,7 +1,7 @@
 import json
 from .circuit import Circuit
 
-path = '/home/askt/Study/tqec_optimizer/data/'
+path = '/Users/Askt/Study/tqec_optimizer/data/'
 
 
 class CircuitReader:
@@ -44,7 +44,7 @@ class CircuitReader:
             if self.__read_measurements(key, value):
                 continue
 
-            if self.__read_cnots(key, value):
+            if self.__read_operations(key, value):
                 continue
 
             self.error('syntax error')
@@ -98,11 +98,11 @@ class CircuitReader:
 
         return True
 
-    def __read_cnots(self, key, value):
-        if key != "cnots":
+    def __read_operations(self, key, value):
+        if key != "operations":
             return False
 
         for element in value:
-            self._circuit.add_cnots(element)
+            self._circuit.add_operations(element)
 
         return True

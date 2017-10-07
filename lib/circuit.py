@@ -9,7 +9,7 @@ class Circuit:
         self._outputs = []
         self._initializations = []
         self._measurements = []
-        self._cnots = []
+        self._operations = []
         self._length = 0
         self._width = 0
 
@@ -38,8 +38,8 @@ class Circuit:
         return self._measurements
 
     @property
-    def cnots(self):
-        return self._cnots
+    def operations(self):
+        return self._operations
 
     def add_bits(self, n):
         self._bits.append(n)
@@ -56,14 +56,19 @@ class Circuit:
     def add_measurements(self, dic):
         self._measurements.append(dic)
 
-    def add_cnots(self, dic):
-        self._cnots.append(dic)
+    def add_operations(self, dic):
+        self._operations.append(dic)
 
     def update(self):
         """
         量子回路情報からTQEC回路に必要な情報を更新する
         """
-        self._length = len(self._cnots) * 4
+        length = 0
+        for operation in self._operations:
+            if operation["type"] == "cnot":
+                length += 1
+
+        self._length = length * 4
         self._width = len(self._bits) * 2
 
     def debug(self):
@@ -72,4 +77,4 @@ class Circuit:
         print("outputs :", self._outputs)
         print("init :", self._initializations)
         print("mesur :", self._measurements)
-        print("cnots :", self._cnots)
+        print("operations :", self._operations)

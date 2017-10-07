@@ -1,0 +1,229 @@
+{
+  "bits"   : [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15],
+  "outputs": [15],
+  "initializations": [
+    {
+      "bit" : 0,
+      "type": "x"
+    },
+    {
+      "bit" : 1,
+      "type": "x"
+    },
+    {
+      "bit" : 2,
+      "type": "z"
+    },
+    {
+      "bit" : 3,
+      "type": "x"
+    },
+    {
+      "bit" : 4,
+      "type": "z"
+    },
+    {
+      "bit" : 5,
+      "type": "z"
+    },
+    {
+      "bit" : 6,
+      "type": "z"
+    },
+    {
+      "bit" : 7,
+      "type": "x"
+    },
+    {
+      "bit" : 8,
+      "type": "z"
+    },
+    {
+      "bit" : 9,
+      "type": "z"
+    },
+    {
+      "bit" : 10,
+      "type": "z"
+    },
+    {
+      "bit" : 11,
+      "type": "z"
+    },
+    {
+      "bit" : 12,
+      "type": "z"
+    },
+    {
+      "bit" : 13,
+      "type": "z"
+    },
+    {
+      "bit" : 14,
+      "type": "z"
+    },
+    {
+      "bit" : 15,
+      "type": "x"
+    }
+  ],
+  "measurements": [
+    {
+      "bit" : 0,
+      "type": "x"
+    },
+    {
+      "bit" : 1,
+      "type": "x"
+    },
+    {
+      "bit" : 2,
+      "type": "x"
+    },
+    {
+      "bit" : 3,
+      "type": "x"
+    },
+    {
+      "bit" : 4,
+      "type": "x"
+    },
+    {
+      "bit" : 5,
+      "type": "x"
+    },
+    {
+      "bit" : 6,
+      "type": "x"
+    },
+    {
+      "bit" : 7,
+      "type": "x"
+    },
+    {
+      "bit" : 8,
+      "type": "x"
+    },
+    {
+      "bit" : 9,
+      "type": "x"
+    },
+    {
+      "bit" : 10,
+      "type": "x"
+    },
+    {
+      "bit" : 11,
+      "type": "x"
+    },
+    {
+      "bit" : 12,
+      "type": "x"
+    },
+    {
+      "bit" : 13,
+      "type": "x"
+    },
+    {
+      "bit" : 14,
+      "type": "x"
+    },
+    {
+      "bit" : 15,
+      "type": "x"
+    }
+  ],
+  "operations": [
+    {
+      "type": "cnot",
+      "control": 15,
+      "targets" : [14]
+    },
+    {
+      "type": "cnot",
+      "control": 7,
+      "targets" : [8, 9, 10, 11, 12, 13, 14]
+    },
+    {
+      "type": "cnot",
+      "control": 3,
+      "targets" : [4, 5, 6, 11, 12, 13, 14]
+    },
+    {
+      "type": "cnot",
+      "control": 1,
+      "targets" : [2, 5, 6, 9, 10, 13, 14]
+    },
+    {
+      "type": "cnot",
+      "control": 0,
+      "targets" : [2, 4, 6, 8, 10, 12, 14]
+    },
+    {
+      "type": "cnot",
+      "control": 14,
+      "targets" : [2, 4, 5, 8, 9, 11]
+    },
+    {
+      "type": "t",
+      "target": 0
+    },
+    {
+      "type": "t",
+      "target": 1
+    },
+    {
+      "type": "t",
+      "target": 2
+    },
+    {
+      "type": "t",
+      "target": 3
+    },
+    {
+      "type": "t",
+      "target": 4
+    },
+    {
+      "type": "t",
+      "target": 5
+    },
+    {
+      "type": "t",
+      "target": 6
+    },
+    {
+      "type": "t",
+      "target": 7
+    },
+    {
+      "type": "t",
+      "target": 8
+    },
+    {
+      "type": "t",
+      "target": 9
+    },
+    {
+      "type": "t",
+      "target": 10
+    },
+    {
+      "type": "t",
+      "target": 11
+    },
+    {
+      "type": "t",
+      "target": 12
+    },
+    {
+      "type": "t",
+      "target": 13
+    },
+    {
+      "type": "t",
+      "target": 14
+    }
+  ]
+}
+
