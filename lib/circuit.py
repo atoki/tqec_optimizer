@@ -68,7 +68,7 @@ class Circuit:
             if operation["type"] == "cnot":
                 length += 1
 
-        self._length = length * 4
+        self._length = length * 6
         self._width = len(self._bits) * 2
 
     def debug(self):

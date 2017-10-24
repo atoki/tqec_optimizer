@@ -11,7 +11,7 @@ from lib.circuit_writer import CircuitWriter
 
 
 def main():
-    file_name = "y.json"
+    file_name = sys.argv[1]
     circuit = CircuitReader().read_circuit(file_name)
     circuit.debug()
     graph = Graph(circuit, 2)

@@ -114,7 +114,7 @@ class Graph:
 
     def __create_bit_lines(self):
         """
-        primal型 defect
+        primal型 qubit defect pair
         初期回路のグラフ化に使用
         """
         upper = 2
@@ -122,15 +122,30 @@ class Graph:
         type = "primal"
         print("width: ", self._circuit.width)
         print("length:", self._circuit.length)
+
+        # prepare controlled not operation
+        cnots = []
+        for operation in self._circuit.operations:
+            if operation["type"] == "cnot":
+                cnots.append(operation)
+
         for x in range(0, self._circuit.width, 2):
             last_upper_node = None
             last_lower_node = None
             for z in range(0, self._circuit.length + 1, 2):
+
+                # CNOTの箇所は切断する
+                skip = False
+                for no, cnot in enumerate(cnots):
+                    if x == cnot["control"] * 2 and z == no * 6 + 4:
+                        skip = True
+
                 upper_node = self.__new_node(type, x, upper, z)
                 lower_node = self.__new_node(type, x, lower, z)
                 if last_upper_node is not None or last_lower_node is not None:
-                    self.__new__edge(upper_node, last_upper_node, "edge")
-                    self.__new__edge(lower_node, last_lower_node, "edge")
+                    if not skip:
+                        self.__new__edge(upper_node, last_upper_node, "edge")
+                        self.__new__edge(lower_node, last_lower_node, "edge")
                 last_upper_node = upper_node
                 last_lower_node = lower_node
 
@@ -179,7 +194,7 @@ class Graph:
     def __create_operations(self):
         """
         CNOTとState Injectionを追加する
-
+        初期回路のグラフ化に使用
         """
         no = 0
         for operation in self._circuit.operations:
@@ -195,8 +210,8 @@ class Graph:
         初期回路のグラフ化に使用
         """
         type = "primal"
-        node1 = Node(type, operation["target"] * 2, 0, no * 4)
-        node2 = Node(type, operation["target"] * 2, 2, no * 4)
+        node1 = Node(type, operation["target"] * 2, 0, no * 6)
+        node2 = Node(type, operation["target"] * 2, 2, no * 6)
         self.__new__edge(node1, node2, "pin")
 
     def __create_braidings(self, no, cnot):
@@ -204,10 +219,10 @@ class Graph:
         ブレイディング(Controlled NOT)の追加
         初期回路のグラフ化に使用
         左回りに作る
-
         """
 
         type = "dual"
+        # ノード間の距離
         space = 2
         node_array = []
         tbit_no_array = cnot["targets"]
@@ -218,12 +233,16 @@ class Graph:
         min_bit_no = min(bit_no_array)
         d = 1.0 if (cbit_no < tbit_no_array[0]) else -1.0
 
-        # add bridge
-        upper = Node("primal", cbit_no * 2, 2, no * 4 + 2)
-        lower = Node("primal", cbit_no * 2, 0, no * 4 + 2)
-        self.__new__edge(upper, lower, "bridge")
+        # ループを閉じる為のEdgeを作成
+        upper = Node("primal", cbit_no * space, 2, no * 6 + 3 - 1)
+        lower = Node("primal", cbit_no * space, 0, no * 6 + 3 - 1)
+        self.__new__edge(upper, lower, "line")
 
-        node = self.__new_node(type, cbit_no * 2 - 1 * d, 1, no * 4 + 2 - d)
+        upper = Node("primal", cbit_no * space, 2, no * 6 + 3 + 1)
+        lower = Node("primal", cbit_no * space, 0, no * 6 + 3 + 1)
+        self.__new__edge(upper, lower, "line")
+
+        node = self.__new_node(type, cbit_no * space - 1 * d, 1, no * 6 + 3 - space * d)
         node_array.append(self.__new_node(node.type, node.x, node.y, node.z))
         node.pos.incx(space * d)
         node_array.append(self.__new_node(node.type, node.x, node.y, node.z))
@@ -252,6 +271,8 @@ class Graph:
         node_array.append(self.__new_node(node.type, node.x, node.y, node.z))
         node.pos.incz(space * d)
         node_array.append(self.__new_node(node.type, node.x, node.y, node.z))
+        node.pos.incz(space * d)
+        node_array.append(self.__new_node(node.type, node.x, node.y, node.z))
 
         x = max_bit_no if (cbit_no < tbit_no_array[0]) else min_bit_no
         while x != cbit_no:
@@ -262,6 +283,8 @@ class Graph:
         node.pos.decy(space)
         node_array.append(self.__new_node(node.type, node.x, node.y, node.z))
         node.pos.decx(space * d)
+        node_array.append(self.__new_node(node.type, node.x, node.y, node.z))
+        node.pos.decz(space * d)
         node_array.append(self.__new_node(node.type, node.x, node.y, node.z))
 
         first_node = node_array[0]

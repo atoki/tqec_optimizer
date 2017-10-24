@@ -1,7 +1,8 @@
+import os
 import json
 from .circuit import Circuit
 
-path = '/Users/Askt/Study/tqec_optimizer/data/'
+path = os.getcwd() + '/data/'
 
 
 class CircuitReader:
