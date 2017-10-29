@@ -16,7 +16,7 @@ class CircuitWriter:
         self._edges = []
         self._injectors = []
 
-    def write(self):
+    def write(self, output_file):
         self.__make_logical_qubits()
         self.__make_edges_and_injectors()
 
@@ -24,9 +24,8 @@ class CircuitWriter:
                 "edges": self._edges,
                 "injectors": self._injectors}
 
-        file = 'sample.json'
-        with open(file, 'w') as outfile:
-            json.dump(data, outfile)
+        with open(output_file, 'w') as outfile:
+            json.dump(data, outfile, indent=4)
 
     def __make_logical_qubits(self):
         for node in self._graph.node_list:

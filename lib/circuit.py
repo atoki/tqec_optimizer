@@ -22,6 +22,10 @@ class Circuit:
         return self._width
 
     @property
+    def bits(self):
+        return self._bits
+
+    @property
     def inputs(self):
         return self._inputs
 
