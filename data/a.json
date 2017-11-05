@@ -127,10 +127,6 @@
     {
       "bit" : 14,
       "type": "x"
-    },
-    {
-      "bit" : 15,
-      "type": "x"
     }
   ],
   "operations": [

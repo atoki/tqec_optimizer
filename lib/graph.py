@@ -1,3 +1,5 @@
+import random
+
 from .position import Position
 
 
@@ -7,12 +9,16 @@ class Node:
         self._type = type
         self._pos = Position(x, y, z)
         self._edge_list = []
+        self._color = 0
 
     def set_type(self, type):
         self._type = type
 
     def add_edge(self, edge):
         self._edge_list.append(edge)
+
+    def set_color(self, color):
+        self._color = color
 
     @property
     def id(self):
@@ -21,6 +27,10 @@ class Node:
     @property
     def type(self):
         return self._type
+
+    @property
+    def color(self):
+        return self._color
 
     @property
     def pos(self):
@@ -53,12 +63,16 @@ class Edge:
         self._category = category
         self._node1 = node1
         self._node2 = node2
+        self._color = 0
 
     def set_id(self, id):
         self._id = id
 
     def set_type(self, type):
         self._type = type
+
+    def set_color(self, color):
+        self._color = color
 
     @property
     def id(self):
@@ -71,6 +85,22 @@ class Edge:
     @property
     def category(self):
         return self._category
+
+    @property
+    def color(self):
+        return self._color
+
+    @property
+    def x(self):
+        return (self._node1.x + self._node2.x) / 2
+
+    @property
+    def y(self):
+        return (self._node1.y + self._node2.y) / 2
+
+    @property
+    def z(self):
+        return (self._node1.z + self._node2.z) / 2
 
     @property
     def node1(self):
@@ -109,7 +139,7 @@ class Graph:
         self._circuit = circuit
         self._space = space
         self._var_node_count = 0
-        self._var_edge_count = 0
+        self._var_loop_count = 0
         self._max_x = len(circuit.bits) * 2 - 1 + space
         self._min_x = -1 - space
         self._max_y = 3 + space
@@ -122,12 +152,23 @@ class Graph:
         self._node_list = []
         self._edge_list = []
 
+        # (ビット列の作成) -> 初期化・入力 -> 演算 -> 観測・出力 の順に実行
         self.__create_bit_lines()
-        self.__create_bridges()
-        self.__create_injectors()
+        self.__create_initializations()
+        self.__create_inputs()
         self.__create_operations()
+        self.__create_measurements()
+        self.__create_outputs()
 
-        self.__assign_loop_id()
+        # self.__delete_loop()
+
+    @property
+    def node_list(self):
+        return self._node_list
+
+    @property
+    def edge_list(self):
+        return self._edge_list
 
     def __create_bit_lines(self):
         """
@@ -166,46 +207,69 @@ class Graph:
                 last_upper_node = upper_node
                 last_lower_node = lower_node
 
-    def __create_bridges(self):
+    def __create_initializations(self):
         """
-        初期化と観測の追加
+        初期化の追加
         初期回路のグラフ化に使用
         """
-        type = "primal"
         for init in self._circuit.initializations:
             if init["type"] == "z":
+                loop_id = self.__new_loop_variable()
                 node1 = self.__node(init["bit"] * 2, 0, 0)
                 node2 = self.__node(init["bit"] * 2, 2, 0)
-                self.__new__edge(node1, node2, "bridge", self.__new_edge_variable())
+                self.__new__edge(node1, node2, "bridge", loop_id)
+                self.__assign_line_id(init["bit"] * 2, 0, loop_id)
 
+    def __create_measurements(self):
+        """
+        観測の追加
+        初期回路のグラフ化に使用
+        """
         for meas in self._circuit.measurements:
             if meas["type"] == "z":
+                loop_id = self.__get_front_edge_loop_id(meas["bit"] * 2, self._circuit.length)
                 node1 = self.__node(meas["bit"] * 2, 0, self._circuit.length)
                 node2 = self.__node(meas["bit"] * 2, 2, self._circuit.length)
-                self.__new__edge(node1, node2, "bridge", self.__new_edge_variable())
+                self.__new__edge(node1, node2, "bridge", loop_id)
             else:
                 upper_node1 = self.__node(meas["bit"] * 2, 2, self._circuit.length)
                 lower_node1 = self.__node(meas["bit"] * 2, 0, self._circuit.length)
-                upper_node2 = self.__new_node(type, meas["bit"] * 2, 2, self._circuit.length + 2)
-                lower_node2 = self.__new_node(type, meas["bit"] * 2, 0, self._circuit.length + 2)
+                upper_node2 = self.__new_node(upper_node1.type, meas["bit"] * 2, 2, self._circuit.length + 2)
+                lower_node2 = self.__new_node(lower_node1.type, meas["bit"] * 2, 0, self._circuit.length + 2)
                 self.__new__edge(upper_node1, upper_node2, "line")
                 self.__new__edge(lower_node1, lower_node2, "line")
 
+                # X基底の観測直前にZ基底の観測、ピンがなければ閉じていないループの番号を0に上書きする
+                remove = True
+                for edge in upper_node1.edge_list:
+                    if edge.category == "bridge" or edge.category == "pin" or edge.category == "cap":
+                        remove = False
+                if remove:
+                    loop_id = self.__get_front_edge_loop_id(meas["bit"] * 2, self._circuit.length)
+                    self.__remove_loop_id(loop_id)
 
-    def __create_injectors(self):
+    def __create_inputs(self):
         """
         外部入出力の追加
         初期回路のグラフ化に使用
         """
         for x in self._circuit.inputs:
+            loop_id = self.__new_loop_variable()
             node1 = self.__node(x * 2, 0, 0)
             node2 = self.__node(x * 2, 2, 0)
-            self.__new__edge(node1, node2, "cap", self.__new_edge_variable())
+            self.__new__edge(node1, node2, "cap", loop_id)
+            self.__assign_line_id(x * 2, 0, loop_id)
 
+    def __create_outputs(self):
+        """
+        外部入出力の追加
+        初期回路のグラフ化に使用
+        """
         for x in self._circuit.outputs:
+            loop_id = self.__get_front_edge_loop_id(x * 2, self._circuit.length)
             node1 = self.__node(x * 2, 0, self._circuit.length)
             node2 = self.__node(x * 2, 2, self._circuit.length)
-            self.__new__edge(node1, node2, "cap", self.__new_edge_variable())
+            self.__new__edge(node1, node2, "cap", loop_id)
 
     def __create_operations(self):
         """
@@ -225,10 +289,12 @@ class Graph:
         State Injectionの追加
         初期回路のグラフ化に使用
         """
-        type = "primal"
+        loop_id = self.__get_front_edge_loop_id(operation["target"] * 2, no * 6)
         node1 = self.__node(operation["target"] * 2, 0, no * 6)
         node2 = self.__node(operation["target"] * 2, 2, no * 6)
-        self.__new__edge(node1, node2, "pin", self.__new_edge_variable())
+        self.__new__edge(node1, node2, "pin", loop_id)
+        loop_id = self.__new_loop_variable()
+        self.__assign_line_id(operation["target"] * 2, no * 6, loop_id)
 
     def __create_braidings(self, no, cnot):
         """
@@ -236,7 +302,6 @@ class Graph:
         初期回路のグラフ化に使用
         左回りに作る
         """
-
         type = "dual"
         # ノード間の距離
         space = 2
@@ -250,13 +315,16 @@ class Graph:
         d = 1.0 if (cbit_no < tbit_no_array[0]) else -1.0
 
         # ループを閉じる為のEdgeを作成
+        loop_id = self.__get_front_edge_loop_id(cbit_no * space, no * 6 + 3 - 1)
         upper = self.__node(cbit_no * space, 2, no * 6 + 3 - 1)
         lower = self.__node(cbit_no * space, 0, no * 6 + 3 - 1)
-        self.__new__edge(upper, lower, "line", self.__new_edge_variable())
+        self.__new__edge(upper, lower, "line", loop_id)
 
+        loop_id = self.__new_loop_variable()
         upper = self.__node(cbit_no * space, 2, no * 6 + 3 + 1)
         lower = self.__node(cbit_no * space, 0, no * 6 + 3 + 1)
-        self.__new__edge(upper, lower, "line", self.__new_edge_variable())
+        self.__new__edge(upper, lower, "line", loop_id)
+        self.__assign_line_id(cbit_no * space, no * 6 + 3 + 1, loop_id)
 
         # ブレイディングの作成
         node = self.__new_node(type, cbit_no * space - 1 * d, 1, no * 6 + 3 - space * d)
@@ -312,71 +380,33 @@ class Graph:
             last_node = node
         self.__new__edge(first_node, last_node, "edge")
 
-    def __assign_loop_id(self):
-        index = 1
+    def __assign_line_id(self, x, z, id):
+        """
+        辺に対してループの番号を振る
+        """
         for edge in self._edge_list:
-            if edge.id < 0 and edge.type == "primal":
-                index = self.__detect_primal_loop(edge, index)
+            if edge.x == x and edge.z > z:
+                edge.set_id(id)
 
-    def __detect_primal_loop(self, edge, index):
-        start_node = edge.node1
-        stack = [start_node]
-        visited = []
-        pren = {}
-        first_step = True
-        step = 2
+    def __get_front_edge_loop_id(self, x, z):
+        for edge in self._edge_list:
+            if (edge.node1.x == x and edge.node1.z == z and edge.node2.z < z) \
+                    or (edge.node2.x == x and edge.node2.z == z and edge.node1.z < z):
+                return edge.id
 
-        # 深さ優先で閉路検出
-        while stack:
-            current_node = stack.pop()
-            if current_node == start_node and not first_step:
-                visited.append(current_node)
-                break
-            if current_node in visited:
-                continue
-            visited.append(current_node)
-            for edge in current_node.edge_list:
-                next_node = edge.alt_node(current_node)
-                if next_node not in visited:
-                    pren[next_node] = current_node
-                    stack.append(next_node)
-            step -= 1
-            if step == 0:
-                visited.remove(start_node)
-            first_step = False
-
-        # 閉路のノードリストを作成する
-        loop = []
-        last_node = pren[start_node]
-        loop.append(last_node)
-        while last_node != start_node:
-            last_node = pren[last_node]
-            loop.append(last_node)
-        last_node = pren[last_node]
-        loop.append(last_node)
-
-        # 検出した閉路に番号を振る
-        if len(loop) > 3:
-            last_node = loop[0]
-            loop.remove(last_node)
-            for next_node in loop:
-                edge = self.__edge(last_node, next_node)
-                edge.set_id(index)
-                last_node = next_node
-            index += 1
-
-        return index
+    def __remove_loop_id(self, loop_id):
+        for edge in self._edge_list:
+            if edge.id == loop_id:
+                edge.set_id(0)
 
     def __delete_loop(self):
-        pass
-
-    @property
-    def node_list(self):
-        return self._node_list
-
-    @property
-    def edge_list(self):
-        return self._edge_list
+        for loop_id in range(1, self._var_edge_count + 1):
+            color = self.__generate_random_color(loop_id)
+            for edge in self._edge_list:
+                if edge.id == loop_id:
+                    edge.set_color(color)
+                    edge.node1.set_color(color)
+                    edge.node2.set_color(color)
 
     def __node(self, x, y, z, id = 0):
         if id == 0:
@@ -398,9 +428,9 @@ class Graph:
         self._var_node_count += 1
         return self._var_node_count
 
-    def __new_edge_variable(self):
-        self._var_edge_count -= 1
-        return self._var_edge_count
+    def __new_loop_variable(self):
+        self._var_loop_count += 1
+        return self._var_loop_count
 
     def __new_node(self, type, x, y, z):
         node = Node(self.__new_node_variable(), type, x, y, z)
@@ -415,6 +445,11 @@ class Graph:
         self.edge_list.append(edge)
 
         return edge
+
+    def __generate_random_color(self, loop_id):
+        colors = [0xffdead, 0x808080, 0x191970, 0x0000ff, 0x00ffff, 0x008000,
+                  0x00ff00, 0xffff00, 0x8b0000, 0xff1493, 0x800080]
+        return colors[loop_id % 11]
 
     def debug(self):
         for node in self._node_list:

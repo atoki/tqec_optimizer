@@ -30,7 +30,8 @@ class CircuitWriter:
     def __make_logical_qubits(self):
         for node in self._graph.node_list:
             dic = {"pos": node.pos.to_array(),
-                   "type": node.type}
+                   "type": node.type,
+                   "color": node.color}
             self._logical_qubits.append(dic)
 
     def __make_edges_and_injectors(self):
@@ -45,5 +46,6 @@ class CircuitWriter:
             else:
                 dic = {"pos1": edge.node1.pos.to_array(),
                        "pos2": edge.node2.pos.to_array(),
-                       "type": edge.type}
+                       "type": edge.type,
+                       "color": edge.color}
                 self._edges.append(dic)
