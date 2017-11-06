@@ -1,5 +1,3 @@
-import random
-
 from .position import Position
 
 
@@ -63,6 +61,7 @@ class Edge:
         self._category = category
         self._node1 = node1
         self._node2 = node2
+        self._cross_edge_list = []
         self._color = 0
 
     def set_id(self, id):
@@ -73,6 +72,9 @@ class Edge:
 
     def set_color(self, color):
         self._color = color
+
+    def add_cross_edge(self, edge):
+        self._cross_edge_list.append(edge)
 
     @property
     def id(self):
@@ -109,6 +111,10 @@ class Edge:
     @property
     def node2(self):
         return self._node2
+
+    @property
+    def cross_edge_list(self):
+        return self._cross_edge_list
 
     def alt_node(self, node):
         if node == self._node1:
@@ -161,6 +167,10 @@ class Graph:
         self.__create_outputs()
 
         # self.__delete_loop()
+
+    @property
+    def loop_count(self):
+        return self._var_loop_count
 
     @property
     def node_list(self):
@@ -327,6 +337,7 @@ class Graph:
         self.__assign_line_id(cbit_no * space, no * 6 + 3 + 1, loop_id)
 
         # ブレイディングの作成
+        loop_id = self.__new_loop_variable()
         node = self.__new_node(type, cbit_no * space - 1 * d, 1, no * 6 + 3 - space * d)
         node_array.append(self.__new_node(node.type, node.x, node.y, node.z))
         node.pos.incx(space * d)
@@ -376,9 +387,9 @@ class Graph:
         last_node = None
         for node in node_array:
             if last_node is not None:
-                self.__new__edge(node, last_node, "edge")
+                self.__new__edge(node, last_node, "edge", loop_id)
             last_node = node
-        self.__new__edge(first_node, last_node, "edge")
+        self.__new__edge(first_node, last_node, "edge", loop_id)
 
     def __assign_line_id(self, x, z, id):
         """

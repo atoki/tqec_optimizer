@@ -79,6 +79,6 @@ class Circuit:
         print("bits :", self._bits)
         print("inputs :", self._inputs)
         print("outputs :", self._outputs)
-        print("init :", self._initializations)
-        print("mesur :", self._measurements)
+        print("initializations :", self._initializations)
+        print("measurements :", self._measurements)
         print("operations :", self._operations)

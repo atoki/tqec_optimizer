@@ -16,6 +16,11 @@ class Position:
     def z(self):
         return self._z
 
+    def set(self, x, y, z):
+        self._x = x
+        self._y = y
+        self._z = z
+
     def incx(self, n=1):
         self._x += n
 

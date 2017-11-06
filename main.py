@@ -10,6 +10,8 @@ from lib.circuit import Circuit
 from lib.graph import Graph
 from lib.circuit_writer import CircuitWriter
 
+from lib.relocation.relocation import Relocation
+
 
 def usage():
     print("usage:", sys.argv[0],)
@@ -40,10 +42,18 @@ def main():
     if output_file is None:
         output_file = "sample.json"
 
+    # preparation
     circuit = CircuitReader().read_circuit(input_file)
     circuit.debug()
     graph = Graph(circuit, 2)
     # graph.debug()
+
+    # optimization of topology
+    optimization = Relocation(graph)
+    optimization.execute()
+    # optimization.debug()
+
+    # output
     writer = CircuitWriter(graph)
     writer.write(output_file)
 
