@@ -14,18 +14,18 @@ class Relocation:
         モジュールを生成する
         """
         for loop_id in range(1, self._graph.loop_count + 1):
-            module = Module(loop_id)
+            module_ = Module(loop_id)
 
             # ループを構成している辺をモジュールに追加する
             for edge in self._graph.edge_list:
                 if edge.id == loop_id:
-                    module.add_edge(edge)
+                    module_.add_edge(edge)
 
-            if len(module.edge_list) == 0:
+            if len(module_.edge_list) == 0:
                 continue
 
             # ループを構成している辺と交差している辺をモジュールに追加する
-            for edge in module.edge_list:
+            for edge in module_.edge_list:
                 if len(edge.cross_edge_list) == 0:
                     continue
 
@@ -33,10 +33,10 @@ class Relocation:
                     self._module_list.append(cross_edge)
 
             # モジュールを構成する全ての辺から座標とサイズ情報を更新する
-            module.update()
+            module_.update()
 
             # モジュールの中身があればリストに追加
-            self._module_list.append(module)
+            self._module_list.append(module_)
 
     def execute(self):
         """
@@ -50,23 +50,24 @@ class Relocation:
 
         return self._graph
 
-    def debug(self):
-        for module in self._module_list:
-            module.debug()
-
     def __color_module(self):
         """
         モジュールに色付けをして可視化する
         """
-        for module in self._module_list:
-            id = module.id
+        for module_ in self._module_list:
+            id = module_.id
             color = self.__generate_random_color(id)
-            for edge in module.edge_list:
+            for edge in module_.edge_list:
                 edge.set_color(color)
                 edge.node1.set_color(color)
                 edge.node2.set_color(color)
 
-    def __generate_random_color(self, loop_id):
+    @staticmethod
+    def __generate_random_color(loop_id):
         colors = [0xffdead, 0x808080, 0x191970, 0x0000ff, 0x00ffff, 0x008000,
                   0x00ff00, 0xffff00, 0x8b0000, 0xff1493, 0x800080]
         return colors[loop_id % 11]
+
+    def debug(self):
+        for module_ in self._module_list:
+            module_.debug()

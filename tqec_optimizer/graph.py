@@ -134,24 +134,16 @@ class Graph:
     TQEC回路をグラフ問題として定式化する
     座標系はtqec_viewerに準拠(=OpenGL(右手座標系))
     """
-    def __init__(self, circuit, space):
+    def __init__(self, circuit):
         """
         コンストラクタ
 
         :param circuit Circuit
-        :param space 座標系において余分に確保する空間長
         """
 
         self._circuit = circuit
-        self._space = space
         self._var_node_count = 0
         self._var_loop_count = 0
-        self._max_x = len(circuit.bits) * 2 - 1 + space
-        self._min_x = -1 - space
-        self._max_y = 3 + space
-        self._min_y = -1 - space
-        self._max_z = len(circuit.operations) * 2 + space
-        self._min_z = 0 - space
         self.__create()
 
     def __create(self):
@@ -165,8 +157,6 @@ class Graph:
         self.__create_operations()
         self.__create_measurements()
         self.__create_outputs()
-
-        # self.__delete_loop()
 
     @property
     def loop_count(self):
@@ -260,7 +250,7 @@ class Graph:
 
     def __create_inputs(self):
         """
-        外部入出力の追加
+        外部入力の追加
         初期回路のグラフ化に使用
         """
         for x in self._circuit.inputs:
@@ -272,7 +262,7 @@ class Graph:
 
     def __create_outputs(self):
         """
-        外部入出力の追加
+        外部出力の追加
         初期回路のグラフ化に使用
         """
         for x in self._circuit.outputs:
@@ -410,16 +400,7 @@ class Graph:
             if edge.id == loop_id:
                 edge.set_id(0)
 
-    def __delete_loop(self):
-        for loop_id in range(1, self._var_edge_count + 1):
-            color = self.__generate_random_color(loop_id)
-            for edge in self._edge_list:
-                if edge.id == loop_id:
-                    edge.set_color(color)
-                    edge.node1.set_color(color)
-                    edge.node2.set_color(color)
-
-    def __node(self, x, y, z, id = 0):
+    def __node(self, x, y, z, id=0):
         if id == 0:
             for node in self._node_list:
                 if node.x == x and node.y == y and node.z == z:
@@ -449,18 +430,13 @@ class Graph:
 
         return node
 
-    def __new__edge(self, node1, node2, category, id = 0):
+    def __new__edge(self, node1, node2, category, id=0):
         edge = Edge(node1, node2, category, id)
         node1.add_edge(edge)
         node2.add_edge(edge)
         self.edge_list.append(edge)
 
         return edge
-
-    def __generate_random_color(self, loop_id):
-        colors = [0xffdead, 0x808080, 0x191970, 0x0000ff, 0x00ffff, 0x008000,
-                  0x00ff00, 0xffff00, 0x8b0000, 0xff1493, 0x800080]
-        return colors[loop_id % 11]
 
     def debug(self):
         for node in self._node_list:

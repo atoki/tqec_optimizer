@@ -4,7 +4,15 @@ from ..position import Position
 
 
 class Module:
+    """
+    モジュールクラス
+    """
     def __init__(self, loop_id):
+        """
+        モジュールへの切断と再配置による最適化を行う
+
+        :param loop_id モジュールを構成する閉路の番号
+        """
         self._id = loop_id
         self._edge_list = []
         self._cross_edge_list = []
@@ -55,7 +63,20 @@ class Module:
         min_x = min_y = min_z = math.inf
         max_x = max_y = max_z = -math.inf
         # (x,y,z)が最小となる座標(pos)とモジュールの大きさを計算する
-        for edge in self._edge_list + self._cross_edge_list:
+        for edge in self._edge_list:
+            for n in range(0, 2):
+                node = edge.node1 if n == 1 else edge.node2
+
+                # モジュールの最小、最大値を更新する
+                min_x = min(node.x - 1, min_x)
+                min_y = min(node.y - 1, min_y)
+                min_z = min(node.z - 1, min_z)
+                max_x = max(node.x + 1, max_x)
+                max_y = max(node.y + 1, max_y)
+                max_z = max(node.z + 1, max_z)
+
+        # (x,y,z)が最小となる座標(pos)とモジュールの大きさを計算する
+        for edge in self._cross_edge_list:
             for n in range(0, 2):
                 node = edge.node1 if n == 1 else edge.node2
 

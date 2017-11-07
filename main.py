@@ -45,7 +45,7 @@ def main():
     # preparation
     circuit = CircuitReader().read_circuit(input_file)
     circuit.debug()
-    graph = Graph(circuit, 2)
+    graph = Graph(circuit)
     # graph.debug()
 
     # optimization of topology
