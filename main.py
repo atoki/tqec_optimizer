@@ -1,16 +1,14 @@
 #! /usr/bin/env python
 # -*- coding: utf-8 -*-
 
-import os
 import sys
 import getopt
 
-from lib.circuit_reader import CircuitReader
-from lib.circuit import Circuit
-from lib.graph import Graph
-from lib.circuit_writer import CircuitWriter
+from tqec_optimizer.circuit_reader import CircuitReader
+from tqec_optimizer.graph import Graph
+from tqec_optimizer.circuit_writer import CircuitWriter
 
-from lib.relocation.relocation import Relocation
+from tqec_optimizer.relocation.relocation import Relocation
 
 
 def usage():
