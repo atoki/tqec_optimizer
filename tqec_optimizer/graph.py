@@ -181,21 +181,23 @@ class Graph:
         print("width: ", self._circuit.width)
         print("length:", self._circuit.length)
 
-        # prepare controlled not operation
-        cnots = []
+        # CNOTならcontrol, T,Sならtargetのx座標をリストにする
+        operation_x_list = []
         for operation in self._circuit.operations:
             if operation["type"] == "cnot":
-                cnots.append(operation)
+                operation_x_list.append(operation["control"])
+            else:
+                operation_x_list.append(operation["target"])
 
         for x in range(0, self._circuit.width, 2):
             last_upper_node = None
             last_lower_node = None
             for z in range(0, self._circuit.length + 1, 2):
 
-                # CNOTの箇所は切断する
+                # CNOT or T or Sの箇所は切断する
                 skip = False
-                for no, cnot in enumerate(cnots):
-                    if x == cnot["control"] * 2 and z == no * 6 + 4:
+                for no, operation_x in enumerate(operation_x_list):
+                    if x == operation_x * 2 and z == no * 6 + 4:
                         skip = True
 
                 upper_node = self.__new_node(type, x, upper, z)
@@ -283,18 +285,66 @@ class Graph:
                 no += 1
             else:
                 self.__create_state_injection(no, operation)
+                no += 1
 
     def __create_state_injection(self, no, operation):
         """
         State Injectionの追加
         初期回路のグラフ化に使用
         """
-        loop_id = self.__get_front_edge_loop_id(operation["target"] * 2, no * 6)
-        node1 = self.__node(operation["target"] * 2, 0, no * 6)
-        node2 = self.__node(operation["target"] * 2, 2, no * 6)
-        self.__new__edge(node1, node2, "pin", loop_id)
+        type = "dual"
+        space = 2
+        target_no = operation["target"]
+        node_array = []
+
+        # ループを閉じる為のEdgeを作成
+        loop_id = self.__get_front_edge_loop_id(target_no * space, no * 6 + 3 - 1)
+        upper = self.__node(target_no * space, 2, no * 6 + 3 - 1)
+        lower = self.__node(target_no * space, 0, no * 6 + 3 - 1)
+        self.__new__edge(upper, lower, "line", loop_id)
+
         loop_id = self.__new_loop_variable()
-        self.__assign_line_id(operation["target"] * 2, no * 6, loop_id)
+        upper = self.__node(target_no * space, 2, no * 6 + 3 + 1)
+        lower = self.__node(target_no * space, 0, no * 6 + 3 + 1)
+        self.__new__edge(upper, lower, "line", loop_id)
+        self.__assign_line_id(target_no * space, no * 6 + 3 + 1, loop_id)
+
+        # State Injection Loop の作成
+        #
+        #  1----6----5
+        #  |         |
+        #  |         |
+        #  2----3-><-4
+        #
+        # 1
+        node = self.__new_node(type, target_no * space - 1, 1, no * 6 + 3 - space)
+        node_array.append(self.__new_node(node.type, node.x, node.y, node.z))
+        node.pos.incx(space)
+        # 2
+        node_array.append(self.__new_node(node.type, node.x, node.y, node.z))
+        node.pos.incz(space)
+        # 3
+        node_array.append(self.__new_node(node.type, node.x, node.y, node.z))
+        node.pos.incz(space)
+        # 4
+        node_array.append(self.__new_node(node.type, node.x, node.y, node.z))
+        node.pos.decx(space)
+        # 5
+        node_array.append(self.__new_node(node.type, node.x, node.y, node.z))
+        node.pos.decz(space)
+        # 6
+        node_array.append(self.__new_node(node.type, node.x, node.y, node.z))
+
+        # add edge
+        loop_id = self.__new_loop_variable()
+        first_node = node_array[0]
+        last_node = None
+        for no, node in enumerate(node_array):
+            category = "pin" if no == 3 else "edge"
+            if last_node is not None:
+                self.__new__edge(node, last_node, category, loop_id)
+            last_node = node
+        self.__new__edge(first_node, last_node, category, loop_id)
 
     def __create_braidings(self, no, cnot):
         """

@@ -1,0 +1,16 @@
+{
+  "bits"   : [0, 1],
+  "inputs" : [0, 1],
+  "outputs": [0, 1],
+  "operations": [
+    {
+      "type": "cnot",
+      "control": 0,
+      "targets" : [1]
+    },
+    {
+      "type": "t",
+      "target" : 0
+    }
+  ]
+}

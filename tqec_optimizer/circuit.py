@@ -67,12 +67,7 @@ class Circuit:
         """
         量子回路情報からTQEC回路に必要な情報を更新する
         """
-        length = 0
-        for operation in self._operations:
-            if operation["type"] == "cnot":
-                length += 1
-
-        self._length = length * 6
+        self._length = len(self._operations) * 6
         self._width = len(self._bits) * 2
 
     def debug(self):

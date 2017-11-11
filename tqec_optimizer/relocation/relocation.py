@@ -46,7 +46,7 @@ class Relocation:
         4.コストが減少しなくなるまで 2.3 を繰り返す
         """
         self.__generate_module()
-        self.__color_module()
+        # self.__color_module()
 
         return self._graph
 
