@@ -75,6 +75,9 @@ class Edge:
     def set_type(self, type):
         self._type = type
 
+    def set_category(self, category):
+        self._category = category
+
     def set_color(self, color):
         self._color = color
 
@@ -129,6 +132,11 @@ class Edge:
         else:
             assert False
 
+    def is_injector(self):
+        if self._category == "pin" or self._category == "cap":
+            return True
+        return False
+
     def debug(self):
         print("type:", self._node1.type, " (", self._node1.x, ",", self._node1.y, ",", self._node1.z, ")", end=" -> ")
         print("(", self._node2.x, ",", self._node2.y, ",", self._node2.z, ")")
@@ -156,13 +164,19 @@ class Graph:
             self.__create()
 
     def __create(self):
-        # (ビット列の作成) -> 初期化・入力 -> 演算 -> 観測・出力 の順に実行
+        """
+        (ビット列の作成) -> 初期化・入力 -> 演算 -> 観測・出力 の順にグラフ化する
+        """
+
         self.__create_bit_lines()
         self.__create_initializations()
         self.__create_inputs()
         self.__create_operations()
         self.__create_measurements()
         self.__create_outputs()
+
+        self.__update_cross_info()
+        self.__adjust_cross_edge()
 
     @property
     def loop_count(self):
@@ -303,6 +317,9 @@ class Graph:
         """
         State Injectionの追加
         初期回路のグラフ化に使用
+
+        :param no このState Injectionが作成さらた順番
+        :param operation
         """
         type = "dual"
         space = 2
@@ -313,12 +330,12 @@ class Graph:
         loop_id = self.__get_front_edge_loop_id(target_no * space, no * 6 + 3 - 1)
         upper = self.__node(target_no * space, 2, no * 6 + 3 - 1)
         lower = self.__node(target_no * space, 0, no * 6 + 3 - 1)
-        self.__new__edge(upper, lower, "line", loop_id)
+        primal_edge1 = self.__new__edge(upper, lower, "line", loop_id)
 
         loop_id = self.__new_loop_variable()
         upper = self.__node(target_no * space, 2, no * 6 + 3 + 1)
         lower = self.__node(target_no * space, 0, no * 6 + 3 + 1)
-        self.__new__edge(upper, lower, "line", loop_id)
+        primal_edge2 = self.__new__edge(upper, lower, "line", loop_id)
         self.__assign_line_id(target_no * space, no * 6 + 3 + 1, loop_id)
 
         # State Injection Loop の作成
@@ -355,7 +372,14 @@ class Graph:
             # 辺を1つだけPinにする
             category = "pin" if no == 3 else "edge"
             if last_node is not None:
-                self.__new__edge(node, last_node, category, loop_id)
+                edge = self.__new__edge(node, last_node, category, loop_id)
+                # 交差するedgeを追加する
+                if no == 1:
+                    edge.add_cross_edge(primal_edge1)
+                    primal_edge1.add_cross_edge(edge)
+                if no == 4:
+                    edge.add_cross_edge(primal_edge2)
+                    primal_edge2.add_cross_edge(edge)
             last_node = node
         self.__new__edge(first_node, last_node, "edge", loop_id)
 
@@ -364,6 +388,9 @@ class Graph:
         ブレイディング(Controlled NOT)の追加
         初期回路のグラフ化に使用
         左回りに作る
+
+        :param no このCNOTが作成さらた順番
+        :param cnot
         """
         type = "dual"
         # ノード間の距離
@@ -381,12 +408,12 @@ class Graph:
         loop_id = self.__get_front_edge_loop_id(cbit_no * space, no * 6 + 3 - 1)
         upper = self.__node(cbit_no * space, 2, no * 6 + 3 - 1)
         lower = self.__node(cbit_no * space, 0, no * 6 + 3 - 1)
-        self.__new__edge(upper, lower, "line", loop_id)
+        primal_edge1 = self.__new__edge(upper, lower, "line", loop_id)
 
         loop_id = self.__new_loop_variable()
         upper = self.__node(cbit_no * space, 2, no * 6 + 3 + 1)
         lower = self.__node(cbit_no * space, 0, no * 6 + 3 + 1)
-        self.__new__edge(upper, lower, "line", loop_id)
+        primal_edge2 = self.__new__edge(upper, lower, "line", loop_id)
         self.__assign_line_id(cbit_no * space, no * 6 + 3 + 1, loop_id)
 
         # ブレイディングの作成
@@ -438,15 +465,76 @@ class Graph:
 
         first_node = node_array[0]
         last_node = None
-        for node in node_array:
+        left = 1 if (cbit_no < tbit_no_array[0]) else len(node_array) - 2
+        right = len(node_array) - 2 if (cbit_no < tbit_no_array[0]) else 1
+        for no, node in enumerate(node_array):
             if last_node is not None:
-                self.__new__edge(node, last_node, "edge", loop_id)
+                edge = self.__new__edge(node, last_node, "edge", loop_id)
+                # 交差するedgeを追加する
+                if no == left:
+                    edge.add_cross_edge(primal_edge1)
+                    primal_edge1.add_cross_edge(edge)
+                if no == right:
+                    edge.add_cross_edge(primal_edge2)
+                    primal_edge2.add_cross_edge(edge)
             last_node = node
         self.__new__edge(first_node, last_node, "edge", loop_id)
 
+    def __adjust_cross_edge(self):
+        """
+        ある辺に交差した辺のidが0だった場合、
+        その辺を交差した辺を保持する配列から削除する
+        """
+        for edge in self._edge_list:
+            del_edge_index = []
+            for no, cross_edge in enumerate(edge.cross_edge_list):
+                if cross_edge.id == 0:
+                    del_edge_index.append(no)
+
+            del_edge_index.sort()
+            del_edge_index.reverse()
+
+            for index in del_edge_index:
+                del edge.cross_edge_list[index]
+
+    def __update_cross_info(self):
+        """
+        CNOTのtargetとbit列の交差情報を更新する
+        """
+        for no, operation in enumerate(self._circuit.operations):
+            if operation["type"] == "cnot" and operation["control"] < operation["targets"][0]:
+                for target in operation["targets"]:
+                    x = target * 2
+                    z = no * 6
+                    primal_node1 = self.__node(x, 2, z + 2)
+                    primal_node2 = self.__node(x, 2, z)
+                    primal_edge = self.__edge(primal_node1, primal_node2)
+                    dual_node1 = self.__node(x - 1, 1, z + 1)
+                    dual_node2 = self.__node(x + 1, 1, z + 1)
+                    dual_edge = self.__edge(dual_node1, dual_node2)
+                    primal_edge.add_cross_edge(dual_edge)
+                    dual_edge.add_cross_edge(primal_edge)
+
+            if operation["type"] == "cnot" and operation["control"] > operation["targets"][0]:
+                for target in operation["targets"]:
+                    x = target * 2
+                    z = no * 6 + 4
+                    primal_node1 = self.__node(x, 2, z + 2)
+                    primal_node2 = self.__node(x, 2, z)
+                    primal_edge = self.__edge(primal_node1, primal_node2)
+                    dual_node1 = self.__node(x - 1, 1, z + 1)
+                    dual_node2 = self.__node(x + 1, 1, z + 1)
+                    dual_edge = self.__edge(dual_node1, dual_node2)
+                    primal_edge.add_cross_edge(dual_edge)
+                    dual_edge.add_cross_edge(primal_edge)
+
     def __assign_line_id(self, x, z, id):
         """
-        辺に対してループの番号を振る
+        x列のz座標より置くの辺に対してループの番号idを振る
+
+        :param x 列
+        :param z この座標から奥のビットにidを振る
+        :param id 構成する辺に振る番号
         """
         for edge in self._edge_list:
             if edge.x == x and edge.z > z:

@@ -21,21 +21,21 @@ class Relocation:
         4.コストが減少しなくなるまで 2.3 を繰り返す
         """
         self.__generate_module()
-        # self.__color_module()
+        self.__color_module()
 
         # primal defect
-        place = SequenceTriple("primal", self._primal_module_list, (6, 6, 20))
-        place.build_permutation()
-        module_list = place.recalculate_coordinate()
+        # place = SequenceTriple("primal", self._primal_module_list, (6, 6, 20))
+        # place.build_permutation()
+        # module_list = place.recalculate_coordinate()
 
         # dual defect
         # place = SequenceTriple("dual", self._dual_module_list, (6, 6, 20))
         # place.build_permutation()
         # module_list = place.recalculate_coordinate()
-
-        graph = self.__module_to_graph(module_list)
-
-        return graph
+        #
+        # graph = self.__module_to_graph(module_list)
+        #
+        # return graph
 
     def __generate_module(self):
         """
@@ -87,16 +87,16 @@ class Relocation:
         for module_ in self._primal_module_list:
             id = module_.id
             color = self.__generate_random_color(id)
-            for edge in module_.edge_list:
+            for edge in module_.edge_list + module_.cross_edge_list:
                 edge.set_color(color)
                 edge.node1.set_color(color)
                 edge.node2.set_color(color)
 
     @staticmethod
     def __generate_random_color(loop_id):
-        colors = [0xffdead, 0x808080, 0x191970, 0x0000ff, 0x00ffff, 0x008000,
+        colors = [0xffdead, 0x808080, 0x191970, 0x00ffff, 0x008000,
                   0x00ff00, 0xffff00, 0x8b0000, 0xff1493, 0x800080]
-        return colors[loop_id % 11]
+        return colors[loop_id % 10]
 
     def debug(self):
         print("--- primal module list ---")

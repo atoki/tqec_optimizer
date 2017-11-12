@@ -38,3 +38,34 @@ class Loop:
 
     def add_injector(self, injector):
         self._injector_list.append(injector)
+
+    def remove_cross(self, cross_loop_id):
+        self._cross_list.remove(cross_loop_id)
+
+    def shift_injector(self, category):
+        """
+        他のループからインジェクターを移動させてくる
+        移す場所は適当
+
+        :param category 移動させるピンの種類
+        """
+        candidate_edge = self._edge_list[0]
+        for edge in self._edge_list:
+            if edge.is_injector():
+                continue
+
+            if edge.z > candidate_edge.z:
+                candidate_edge = edge
+
+            if edge.z == candidate_edge.z:
+                if edge.x < candidate_edge.x:
+                    candidate_edge = edge
+
+        candidate_edge.set_category(category)
+        self._injector_list.append(candidate_edge)
+
+    def debug(self):
+        print("----- ", self._id, " -----")
+        print("edge list     = ", len(self._edge_list))
+        print("cross list    = ", len(self._cross_list))
+        print("injector list = ", len(self._injector_list))
