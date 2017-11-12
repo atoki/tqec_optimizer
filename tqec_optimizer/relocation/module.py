@@ -7,13 +7,13 @@ class Module:
     """
     モジュールクラス
     """
-    def __init__(self, loop_id):
+    def __init__(self, module_id):
         """
-        モジュールへの切断と再配置による最適化を行う
+        コンストラクタ
 
-        :param loop_id モジュールを構成する閉路の番号
+        :param module_id モジュールを構成する閉路の番号
         """
-        self._id = loop_id
+        self._id = module_id
         self._edge_list = []
         self._cross_edge_list = []
         self._pos = Position()

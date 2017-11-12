@@ -8,6 +8,7 @@ from tqec_optimizer.circuit_reader import CircuitReader
 from tqec_optimizer.graph import Graph
 from tqec_optimizer.circuit_writer import CircuitWriter
 
+from tqec_optimizer.transformation.transformation import Transformation
 from tqec_optimizer.relocation.relocation import Relocation
 
 
@@ -42,16 +43,16 @@ def main():
 
     # preparation
     circuit = CircuitReader().read_circuit(input_file)
-    circuit.debug()
     graph = Graph(circuit)
 
+    # optimization of non topology
+    # Transformation(graph).execute()
+
     # optimization of topology
-    # optimization = Relocation(graph)
-    # optimization.execute()
+    # Relocation(graph).execute()
 
     # output
-    writer = CircuitWriter(graph)
-    writer.write(output_file)
+    CircuitWriter(graph).write(output_file)
 
 
 if __name__ == '__main__':
