@@ -26,6 +26,14 @@ class Module:
         return self._id
 
     @property
+    def x(self):
+        return self._pos.x
+
+    @property
+    def pos(self):
+        return self._pos
+
+    @property
     def width(self):
         return self._width
 
@@ -56,7 +64,15 @@ class Module:
         self._height = height
         self._depth = depth
 
-    def set_position(self, position):
+    def set_position(self, position, replace=False):
+        if replace:
+            diff_x = (position.x - self._pos.x) / 2
+            diff_y = (position.y - self._pos.y) / 2
+            diff_z = (position.z - self._pos.z) / 2
+            for edge in self._edge_list + self._cross_edge_list:
+                edge.node1.move(diff_x, diff_y, diff_z)
+                edge.node2.move(diff_x, diff_y, diff_z)
+
         self._pos = position
 
     def update(self):

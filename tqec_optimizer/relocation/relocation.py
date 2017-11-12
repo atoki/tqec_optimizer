@@ -1,4 +1,7 @@
 from .module import Module
+from .sequence_triple import SequenceTriple
+
+from ..graph import Graph
 
 
 class Relocation:
@@ -7,7 +10,32 @@ class Relocation:
     """
     def __init__(self, graph):
         self._graph = graph
-        self._module_list = []
+        self._primal_module_list = []
+        self._dual_module_list = []
+
+    def execute(self):
+        """
+        1.グラフ情報を用いてモジュールを作成
+        2.モジュール単位で再配置を行う
+        3.再配置したモジュールの再接続を行う
+        4.コストが減少しなくなるまで 2.3 を繰り返す
+        """
+        self.__generate_module()
+        # self.__color_module()
+
+        # primal defect
+        place = SequenceTriple("primal", self._primal_module_list, (6, 6, 20))
+        place.build_permutation()
+        module_list = place.recalculate_coordinate()
+
+        # dual defect
+        # place = SequenceTriple("dual", self._dual_module_list, (6, 6, 20))
+        # place.build_permutation()
+        # module_list = place.recalculate_coordinate()
+
+        graph = self.__module_to_graph(module_list)
+
+        return graph
 
     def __generate_module(self):
         """
@@ -24,37 +52,39 @@ class Relocation:
             if len(module_.edge_list) == 0:
                 continue
 
+            type_ = module_.edge_list[0].type
             # ループを構成している辺と交差している辺をモジュールに追加する
             for edge in module_.edge_list:
                 if len(edge.cross_edge_list) == 0:
                     continue
 
                 for cross_edge in edge.cross_edge_list:
-                    self._module_list.append(cross_edge)
+                    module_.add_cross_edge(cross_edge)
 
             # モジュールを構成する全ての辺から座標とサイズ情報を更新する
             module_.update()
 
             # モジュールの中身があればリストに追加
-            self._module_list.append(module_)
+            if type_ == "primal":
+                self._primal_module_list.append(module_)
+            else:
+                self._dual_module_list.append(module_)
 
-    def execute(self):
-        """
-        1.グラフ情報を用いてモジュールを作成
-        2.モジュール単位で再配置を行う
-        3.再配置したモジュールの再接続を行う
-        4.コストが減少しなくなるまで 2.3 を繰り返す
-        """
-        self.__generate_module()
-        # self.__color_module()
+    def __module_to_graph(self, module_list):
+        graph = Graph()
+        for module_ in module_list:
+            for edge in module_.edge_list + module_.cross_edge_list:
+                graph.add_edge(edge)
+                graph.add_node(edge.node1)
+                graph.add_node(edge.node2)
 
-        return self._graph
+        return graph
 
     def __color_module(self):
         """
         モジュールに色付けをして可視化する
         """
-        for module_ in self._module_list:
+        for module_ in self._primal_module_list:
             id = module_.id
             color = self.__generate_random_color(id)
             for edge in module_.edge_list:
@@ -69,5 +99,9 @@ class Relocation:
         return colors[loop_id % 11]
 
     def debug(self):
-        for module_ in self._module_list:
+        print("--- primal module list ---")
+        for module_ in self._primal_module_list:
+            module_.debug()
+        print("--- dual module list ---")
+        for module_ in self._dual_module_list:
             module_.debug()

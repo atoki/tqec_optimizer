@@ -44,12 +44,10 @@ def main():
     circuit = CircuitReader().read_circuit(input_file)
     circuit.debug()
     graph = Graph(circuit)
-    # graph.debug()
 
     # optimization of topology
-    optimization = Relocation(graph)
-    optimization.execute()
-    # optimization.debug()
+    # optimization = Relocation(graph)
+    # optimization.execute()
 
     # output
     writer = CircuitWriter(graph)

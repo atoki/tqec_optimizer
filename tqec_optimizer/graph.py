@@ -18,6 +18,11 @@ class Node:
     def set_color(self, color):
         self._color = color
 
+    def move(self, diff_x, diff_y, diff_z):
+        self._pos.incx(diff_x)
+        self._pos.incy(diff_y)
+        self._pos.incz(diff_z)
+
     @property
     def id(self):
         return self._id
@@ -134,7 +139,7 @@ class Graph:
     TQEC回路をグラフ問題として定式化する
     座標系はtqec_viewerに準拠(=OpenGL(右手座標系))
     """
-    def __init__(self, circuit):
+    def __init__(self, circuit=None):
         """
         コンストラクタ
 
@@ -142,14 +147,15 @@ class Graph:
         """
 
         self._circuit = circuit
-        self._var_node_count = 0
-        self._var_loop_count = 0
-        self.__create()
-
-    def __create(self):
         self._node_list = []
         self._edge_list = []
+        self._var_node_count = 0
+        self._var_loop_count = 0
 
+        if circuit is not None:
+            self.__create()
+
+    def __create(self):
         # (ビット列の作成) -> 初期化・入力 -> 演算 -> 観測・出力 の順に実行
         self.__create_bit_lines()
         self.__create_initializations()
@@ -169,6 +175,12 @@ class Graph:
     @property
     def edge_list(self):
         return self._edge_list
+
+    def add_node(self, node):
+        self._node_list.append(node)
+
+    def add_edge(self, edge):
+        self._edge_list.append(edge)
 
     def __create_bit_lines(self):
         """
@@ -340,6 +352,7 @@ class Graph:
         first_node = node_array[0]
         last_node = None
         for no, node in enumerate(node_array):
+            # 辺を1つだけPinにする
             category = "pin" if no == 3 else "edge"
             if last_node is not None:
                 self.__new__edge(node, last_node, category, loop_id)

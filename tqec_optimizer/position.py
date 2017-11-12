@@ -41,3 +41,6 @@ class Position:
 
     def to_array(self):
         return [self._x, self._y, self._z]
+
+    def debug(self):
+        print("pos (", self._x, ",", self._y, ",", self.z, ")")
