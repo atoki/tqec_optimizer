@@ -329,23 +329,23 @@ class Graph:
         #  2----3-><-4
         #
         # 1
-        node = self.__new_node(type, target_no * space - 1, 1, no * 6 + 3 - space)
-        node_array.append(self.__new_node(node.type, node.x, node.y, node.z))
-        node.pos.incx(space)
+        pos = Position(target_no * space - 1, 1, no * 6 + 3 - space)
+        node_array.append(self.__new_node(type, pos.x, pos.y, pos.z))
+        pos.incx(space)
         # 2
-        node_array.append(self.__new_node(node.type, node.x, node.y, node.z))
-        node.pos.incz(space)
+        node_array.append(self.__new_node(type, pos.x, pos.y, pos.z))
+        pos.incz(space)
         # 3
-        node_array.append(self.__new_node(node.type, node.x, node.y, node.z))
-        node.pos.incz(space)
+        node_array.append(self.__new_node(type, pos.x, pos.y, pos.z))
+        pos.incz(space)
         # 4
-        node_array.append(self.__new_node(node.type, node.x, node.y, node.z))
-        node.pos.decx(space)
+        node_array.append(self.__new_node(type, pos.x, pos.y, pos.z))
+        pos.decx(space)
         # 5
-        node_array.append(self.__new_node(node.type, node.x, node.y, node.z))
-        node.pos.decz(space)
+        node_array.append(self.__new_node(type, pos.x, pos.y, pos.z))
+        pos.decz(space)
         # 6
-        node_array.append(self.__new_node(node.type, node.x, node.y, node.z))
+        node_array.append(self.__new_node(type, pos.x, pos.y, pos.z))
 
         # add edge
         loop_id = self.__new_loop_variable()
@@ -357,7 +357,7 @@ class Graph:
             if last_node is not None:
                 self.__new__edge(node, last_node, category, loop_id)
             last_node = node
-        self.__new__edge(first_node, last_node, category, loop_id)
+        self.__new__edge(first_node, last_node, "edge", loop_id)
 
     def __create_braidings(self, no, cnot):
         """
@@ -391,50 +391,50 @@ class Graph:
 
         # ブレイディングの作成
         loop_id = self.__new_loop_variable()
-        node = self.__new_node(type, cbit_no * space - 1 * d, 1, no * 6 + 3 - space * d)
-        node_array.append(self.__new_node(node.type, node.x, node.y, node.z))
-        node.pos.incx(space * d)
-        node_array.append(self.__new_node(node.type, node.x, node.y, node.z))
+        pos = Position(cbit_no * space - 1 * d, 1, no * 6 + 3 - space * d)
+        node_array.append(self.__new_node(type, pos.x, pos.y, pos.z))
+        pos.incx(space * d)
+        node_array.append(self.__new_node(type, pos.x, pos.y, pos.z))
 
         start = min_bit_no if (cbit_no < tbit_no_array[0]) else max_bit_no
         x = start + 1 * d
         limit = max_bit_no if (cbit_no < tbit_no_array[0]) else min_bit_no
         while x != limit + 1 * d:
             if x in tbit_no_array:
-                if node.y != 1:
-                    node.pos.decy(space)
-                    node_array.append(self.__new_node(node.type, node.x, node.y, node.z))
-                node.pos.incx(space * d)
-                node_array.append(self.__new_node(node.type, node.x, node.y, node.z))
+                if pos.y != 1:
+                    pos.decy(space)
+                    node_array.append(self.__new_node(type, pos.x, pos.y, pos.z))
+                pos.incx(space * d)
+                node_array.append(self.__new_node(type, pos.x, pos.y, pos.z))
 
             else:
-                if node.y == 1:
-                    node.pos.incy(space)
-                    node_array.append(self.__new_node(node.type, node.x, node.y, node.z))
+                if pos.y == 1:
+                    pos.incy(space)
+                    node_array.append(self.__new_node(type, pos.x, pos.y, pos.z))
 
-                node.pos.incx(space * d)
-                node_array.append(self.__new_node(node.type, node.x, node.y, node.z))
+                pos.incx(space * d)
+                node_array.append(self.__new_node(type, pos.x, pos.y, pos.z))
             x += 1 * d
 
-        node.pos.incy(space)
-        node_array.append(self.__new_node(node.type, node.x, node.y, node.z))
-        node.pos.incz(space * d)
-        node_array.append(self.__new_node(node.type, node.x, node.y, node.z))
-        node.pos.incz(space * d)
-        node_array.append(self.__new_node(node.type, node.x, node.y, node.z))
+        pos.incy(space)
+        node_array.append(self.__new_node(type, pos.x, pos.y, pos.z))
+        pos.incz(space * d)
+        node_array.append(self.__new_node(type, pos.x, pos.y, pos.z))
+        pos.incz(space * d)
+        node_array.append(self.__new_node(type, pos.x, pos.y, pos.z))
 
         x = max_bit_no if (cbit_no < tbit_no_array[0]) else min_bit_no
         while x != cbit_no:
-            node.pos.decx(space * d)
-            node_array.append(self.__new_node(node.type, node.x, node.y, node.z))
+            pos.decx(space * d)
+            node_array.append(self.__new_node(type, pos.x, pos.y, pos.z))
             x -= 1 * d
 
-        node.pos.decy(space)
-        node_array.append(self.__new_node(node.type, node.x, node.y, node.z))
-        node.pos.decx(space * d)
-        node_array.append(self.__new_node(node.type, node.x, node.y, node.z))
-        node.pos.decz(space * d)
-        node_array.append(self.__new_node(node.type, node.x, node.y, node.z))
+        pos.decy(space)
+        node_array.append(self.__new_node(type, pos.x, pos.y, pos.z))
+        pos.decx(space * d)
+        node_array.append(self.__new_node(type, pos.x, pos.y, pos.z))
+        pos.decz(space * d)
+        node_array.append(self.__new_node(type, pos.x, pos.y, pos.z))
 
         first_node = node_array[0]
         last_node = None
