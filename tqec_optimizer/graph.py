@@ -56,7 +56,7 @@ class Node:
         return self._edge_list
 
     def debug(self):
-        print("(", self._type, ",", self._pos.x, ",", self._pos.y, ",", self._pos.z, ")")
+        print("type: {} id: {} ({}, {}, {})".format(self._type, self._id, self._pos.x, self._pos.y, self._pos.z))
 
 
 class Edge:
@@ -138,8 +138,9 @@ class Edge:
         return False
 
     def debug(self):
-        print("type:", self._node1.type, " (", self._node1.x, ",", self._node1.y, ",", self._node1.z, ")", end=" -> ")
-        print("(", self._node2.x, ",", self._node2.y, ",", self._node2.z, ")")
+        print("type: {} category: {} ({}, {}, {}) -> ({}, {}, {})".format(self._node1.type, self._category,
+                                                                          self._node1.x, self._node1.y, self._node1.z,
+                                                                          self._node2.x, self._node2.y, self._node2.z))
 
 
 class Graph:
@@ -207,7 +208,7 @@ class Graph:
         print("width: ", self._circuit.width)
         print("length:", self._circuit.length)
 
-        # CNOTならcontrol, T,Sならtargetのx座標をリストにする
+        # CNOTならcontrol, T,Sならtargetのx座標を保存したリストを作成する
         operation_x_list = []
         for operation in self._circuit.operations:
             if operation["type"] == "cnot":

@@ -59,7 +59,8 @@ class Relocation:
                     continue
 
                 for cross_edge in edge.cross_edge_list:
-                    module_.add_cross_edge(cross_edge)
+                    if cross_edge in self._graph.edge_list:
+                        module_.add_cross_edge(cross_edge)
 
             # モジュールを構成する全ての辺から座標とサイズ情報を更新する
             module_.update()
@@ -71,6 +72,11 @@ class Relocation:
                 self._dual_module_list.append(module_)
 
     def __module_to_graph(self, module_list):
+        """
+        モジュールを構成するノードと辺の情報をもとにグラフクラスを作成する
+
+        :param module_list グラフ化するモジュールのリスト
+        """
         graph = Graph()
         for module_ in module_list:
             for edge in module_.edge_list + module_.cross_edge_list:
@@ -84,7 +90,7 @@ class Relocation:
         """
         モジュールに色付けをして可視化する
         """
-        for module_ in self._primal_module_list:
+        for module_ in self._dual_module_list:
             id = module_.id
             color = self.__generate_random_color(id)
             for edge in module_.edge_list + module_.cross_edge_list:

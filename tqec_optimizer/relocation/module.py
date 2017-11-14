@@ -65,17 +65,32 @@ class Module:
         self._depth = depth
 
     def set_position(self, position, replace=False):
+        """
+        モジュールの座標(左, 下, 手前)を設定する
+
+        :param position 設定する座標
+        :param replace 既に作成されたモジュールに新しく設定する場合はTrue
+        """
         if replace:
-            diff_x = (position.x - self._pos.x) / 2
-            diff_y = (position.y - self._pos.y) / 2
-            diff_z = (position.z - self._pos.z) / 2
+            diff_x = position.x - self._pos.x
+            diff_y = position.y - self._pos.y
+            diff_z = position.z - self._pos.z
+
+            move_node_list = []
             for edge in self._edge_list + self._cross_edge_list:
-                edge.node1.move(diff_x, diff_y, diff_z)
-                edge.node2.move(diff_x, diff_y, diff_z)
+                move_node_list.append(edge.node1)
+                move_node_list.append(edge.node2)
+            move_node_list = list(set(move_node_list))
+
+            for node in move_node_list:
+                node.move(diff_x, diff_y, diff_z)
 
         self._pos = position
 
     def update(self):
+        """
+        モジュールのサイズを求めて設定する
+        """
         min_x = min_y = min_z = math.inf
         max_x = max_y = max_z = -math.inf
         # (x,y,z)が最小となる座標(pos)とモジュールの大きさを計算する
