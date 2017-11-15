@@ -9,6 +9,12 @@ class Node:
         self._edge_list = []
         self._color = 0
 
+    def __lt__(self, other):
+        return self.id < other.id
+
+    def __gt__(self, other):
+        return self.id > other.id
+
     def set_type(self, type):
         self._type = type
 
@@ -190,6 +196,10 @@ class Graph:
     @property
     def edge_list(self):
         return self._edge_list
+
+    @property
+    def var_node_count(self):
+        return self._var_node_count
 
     def add_node(self, node):
         self._node_list.append(node)

@@ -29,6 +29,10 @@ class Loop:
     def injector_list(self):
         return self._injector_list
 
+    def set_id(self, id):
+        for edge in self._edge_list:
+            edge.set_id(id)
+
     def add_edge(self, edge):
         self._edge_list.append(edge)
 
@@ -65,7 +69,7 @@ class Loop:
         self._injector_list.append(candidate_edge)
 
     def debug(self):
-        print("----- ", self._id, " -----")
-        print("edge list     = ", len(self._edge_list))
-        print("cross list    = ", len(self._cross_list))
-        print("injector list = ", len(self._injector_list))
+        print("-----  loop id: {} -----".format(self._id))
+        print("edge list     = {}".format(len(self._edge_list)))
+        print("cross list    = {}".format(len(self._cross_list)))
+        print("injector list = {}".format(len(self._injector_list)))
