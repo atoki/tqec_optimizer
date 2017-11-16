@@ -15,6 +15,12 @@ class Node:
     def __gt__(self, other):
         return self.id > other.id
 
+    def __hash__(self):
+        return hash((self._pos.x, self._pos.y, self._pos.z))
+
+    def __eq__(self, other):
+        return (self._id, self._pos.x, self._pos.y, self._pos.z) == (other.id, other.x, other.y, other.z)
+
     def set_type(self, type):
         self._type = type
 

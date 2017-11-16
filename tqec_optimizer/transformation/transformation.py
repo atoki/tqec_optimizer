@@ -1,8 +1,8 @@
-import math
 import heapq
 
 from .loop import Loop
 
+from ..graph import Node
 from ..graph import Edge
 
 
@@ -17,16 +17,27 @@ class Transformation:
         self.__generate_loop()
         # self.__color_loop()
 
-        # reduction = True
-        # while reduction:
-        #     for loop in self._loop_list:
-        #         reduction = self.__rule1(loop)
-        #         if reduction:
-        #             break
+        reduction = True
+        no = 1
+        print("-- rule2 --")
+        while reduction:
+            print("-step{}".format(no))
+            for loop in self._loop_list:
+                reduction = self.__rule2(loop)
+                if reduction:
+                    no += 1
+                    break
 
-        for loop in self._loop_list:
-            if self.__rule2(loop):
-                break
+        reduction = True
+        no = 1
+        print("-- rule1 --")
+        while reduction:
+            print("-step{}".format(no))
+            for loop in self._loop_list:
+                reduction = self.__rule1(loop)
+                if reduction:
+                    no += 1
+                    break
 
     def __generate_loop(self):
         """
@@ -71,7 +82,6 @@ class Transformation:
         """
         変形規則2
         """
-        print("rule2")
         if len(loop.cross_list) != 2 or len(loop.injector_list) != 0:
             return False
 
@@ -95,18 +105,14 @@ class Transformation:
 
         # ループに交差した辺を全て削除する
         for del_edge in cross_edge_list:
-            del_edge.debug()
             self.__delete_edge(del_edge)
 
         # 2つのループを結合する
         self.__connect_loop(cross_loop_list[0], cross_loop_list[1])
 
         # ループを1つにするためにノードをつなげる
-        # self.__connect_node(cross_loop_list[0], node1, node4)
-        # self.__connect_node(cross_loop_list[0], node2, node3)
-
-        # for loop in self._loop_list:
-        #     loop.debug()
+        self.__connect_node(cross_loop_list[0], node1, node3)
+        self.__connect_node(cross_loop_list[0], node2, node4)
 
         return True
 
@@ -140,46 +146,83 @@ class Transformation:
         :param start ノード
         :param end ノード
         """
-        d = [math.inf for i in self._graph.node_list]
-        pren = [-1 for i in self._graph.node_list]
+        first = Node(0, "none", start.x, start.y, start.z)
+        last = Node(0, "none", end.x, end.y, end.z)
 
-        # main loop
+        # best first search
         queue = []
-        heapq.heappush(queue, (0, start))
-        d[start.id] = 0
+        # keyは探索済みノード. valueはその前のノード
+        visited_node = {first: Node(-1, start.type, 0, 0, 0)}
+        heapq.heappush(queue, (0, first))
         dx = [2, 0, -2, 0, 0, 0]
         dy = [0, 2, 0, -2, 0, 0]
         dz = [0, 0, 0, 0, 2, -2]
         while len(queue) != 0:
             current_node_cost, current_node = heapq.heappop(queue)
-            if d[current_node.id] < current_node_cost:
-                continue
+            if self.__is_end_node(current_node, last):
+                break
             for i in range(6):
                 nx = current_node.x + dx[i]
                 ny = current_node.y + dy[i]
                 nz = current_node.z + dz[i]
-                if 0 <= nx < self._graph.width and 0 <= ny < self._graph.height \
-                        and 0 <= nz < self._graph.depth and exit flag:
-                    next_node = self._graph.node(nx, ny, nz)
-                    if d[next_node.id] > current_node_cost + 1:
-                        d[next_node.id] = current_node_cost + 1
+                if -3 <= nx < 100 and -3 <= ny < 100 and -3 <= nz < 100 \
+                        and not self.__is_prohibit(end, nx, ny, nz):
+                    next_node = Node(0, start.type, nx, ny, nz)
+                    if next_node not in visited_node:
+                        visited_node[next_node] = current_node
                         heapq.heappush(queue, (current_node_cost + 1, next_node))
-                        pren[next_node.id] = current_node.id
 
-        # set path
-        path = [-1 for i in self._graph.node_list]
-        preid = pren[end.id]
-        path[preid] = net_id
-        while preid != start.id:
-            preid = pren[preid]
-            path[preid] = net_id
-        path[start.id] = net_id
-        path[end.id] = net_id
+        route = []
+        node = last
+        while not self.__is_start_node(node, first):
+            route.insert(0, node)
+            node = visited_node[node]
+        route.insert(0, node)
 
+        self.__create_route(loop, start, end, route)
 
-        edge = Edge(node1, node2, "edge", loop.id)
-        loop.add_edge(edge)
-        self._graph.add_edge(edge)
+    @staticmethod
+    def __is_start_node(node, start):
+        if node.x == start.x and node.y == start.y and node.z == start.z:
+            return True
+
+        return False
+
+    @staticmethod
+    def __is_end_node(node, end):
+        if node.x == end.x and node.y == end.y and node.z == end.z:
+            return True
+
+        return False
+
+    def __create_route(self, loop, start, end, route):
+        if len(route) == 2:
+            edge = self.__new__edge(start, end, "edge", loop.id)
+            loop.add_edge(edge)
+            return
+
+        node_array = route[1:len(route)-1]
+
+        for node in node_array:
+            self.__new_node(node.type, node.x, node.y, node.z)
+
+        node_array.insert(0, start)
+        node_array.append(end)
+        last_node = None
+        for node in node_array:
+            if last_node is not None:
+                self.__new__edge(node, last_node, "edge", loop.id)
+            last_node = node
+
+    def __is_prohibit(self, end, x, y, z):
+        if end.x == x and end.y == y and end.z == z:
+            return False
+
+        for n in self._graph.node_list:
+            if x == n.x and y == n.y and z == n.z:
+                return True
+
+        return False
 
     def __delete_edge(self, del_edge):
         """
@@ -251,6 +294,20 @@ class Transformation:
         for loop in self._loop_list:
             if loop.id == loop_id:
                 return loop
+
+    def __new_node(self, type, x, y, z):
+        node = Node(self.__new_node_variable(), type, x, y, z)
+        self._graph.add_node(node)
+
+        return node
+
+    def __new__edge(self, node1, node2, category, id=0):
+        edge = Edge(node1, node2, category, id)
+        node1.add_edge(edge)
+        node2.add_edge(edge)
+        self._graph.add_edge(edge)
+
+        return edge
 
     @staticmethod
     def __generate_random_color(loop_id):
