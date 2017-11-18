@@ -1,3 +1,5 @@
+import copy
+
 from .position import Position
 
 
@@ -413,7 +415,8 @@ class Graph:
         # ノード間の距離
         space = 2
         node_array = []
-        tbit_no_array = cnot["targets"]
+
+        tbit_no_array = copy.deepcopy(cnot["targets"])
         cbit_no = cnot["control"]
         bit_no_array = tbit_no_array
         bit_no_array.append(cbit_no)
