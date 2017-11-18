@@ -55,15 +55,15 @@ class Node:
 
     @property
     def x(self):
-        return self._pos.x
+        return int(self._pos.x)
 
     @property
     def y(self):
-        return self._pos.y
+        return int(self._pos.y)
 
     @property
     def z(self):
-        return self._pos.z
+        return int(self._pos.z)
 
     @property
     def edge_list(self):

@@ -1,6 +1,7 @@
 import heapq
 
 from .loop import Loop
+from .best_first_search import BestFirstSearch
 
 from ..graph import Node
 from ..graph import Edge
@@ -11,6 +12,23 @@ class Transformation:
         self._graph = graph
         self._var_node_count = graph.var_node_count
         self._loop_list = []
+        self._space = 4
+
+        (max_x, max_y, max_z) = (0, 0, 0)
+        for node in self._graph.node_list:
+            max_x = max(max_x, node.x)
+            max_y = max(max_y, node.y)
+            max_z = max(max_z, node.z)
+
+        self._size = (max_x + self._space, max_y + self._space, max_z + self._space)
+
+        self._used_node_array = [[[False
+                                   for z in range(0, int(max_z + self._space * 2) + 1)]
+                                  for y in range(0, int(max_y + self._space * 2) + 1)]
+                                 for x in range(0, int(max_x + self._space * 2) + 1)]
+
+        for node in self._graph.node_list:
+            self._used_node_array[node.x + self._space][node.y + self._space][node.z + self._space] = True
 
     def execute(self):
         self.__delete_loop(0)
@@ -110,6 +128,8 @@ class Transformation:
         # 2つのループを結合する
         self.__connect_loop(cross_loop_list[0], cross_loop_list[1])
 
+        # self.__color_node()
+
         # ループを1つにするためにノードをつなげる
         self.__connect_node(cross_loop_list[0], node1, node3)
         self.__connect_node(cross_loop_list[0], node2, node4)
@@ -146,54 +166,8 @@ class Transformation:
         :param start ノード
         :param end ノード
         """
-        first = Node(0, "none", start.x, start.y, start.z)
-        last = Node(0, "none", end.x, end.y, end.z)
-
-        # best first search
-        queue = []
-        # keyは探索済みノード. valueはその前のノード
-        visited_node = {first: Node(-1, start.type, 0, 0, 0)}
-        heapq.heappush(queue, (0, first))
-        dx = [2, 0, -2, 0, 0, 0]
-        dy = [0, 2, 0, -2, 0, 0]
-        dz = [0, 0, 0, 0, 2, -2]
-        while len(queue) != 0:
-            current_node_cost, current_node = heapq.heappop(queue)
-            if self.__is_end_node(current_node, last):
-                break
-            for i in range(6):
-                nx = current_node.x + dx[i]
-                ny = current_node.y + dy[i]
-                nz = current_node.z + dz[i]
-                if -3 <= nx < 100 and -3 <= ny < 100 and -3 <= nz < 100 \
-                        and not self.__is_prohibit(end, nx, ny, nz):
-                    next_node = Node(0, start.type, nx, ny, nz)
-                    if next_node not in visited_node:
-                        visited_node[next_node] = current_node
-                        heapq.heappush(queue, (current_node_cost + 1, next_node))
-
-        route = []
-        node = last
-        while not self.__is_start_node(node, first):
-            route.insert(0, node)
-            node = visited_node[node]
-        route.insert(0, node)
-
+        route = BestFirstSearch(start, end, self._used_node_array, self._size, self._space).search()
         self.__create_route(loop, start, end, route)
-
-    @staticmethod
-    def __is_start_node(node, start):
-        if node.x == start.x and node.y == start.y and node.z == start.z:
-            return True
-
-        return False
-
-    @staticmethod
-    def __is_end_node(node, end):
-        if node.x == end.x and node.y == end.y and node.z == end.z:
-            return True
-
-        return False
 
     def __create_route(self, loop, start, end, route):
         if len(route) == 2:
@@ -213,16 +187,6 @@ class Transformation:
             if last_node is not None:
                 self.__new__edge(node, last_node, "edge", loop.id)
             last_node = node
-
-    def __is_prohibit(self, end, x, y, z):
-        if end.x == x and end.y == y and end.z == z:
-            return False
-
-        for n in self._graph.node_list:
-            if x == n.x and y == n.y and z == n.z:
-                return True
-
-        return False
 
     def __delete_edge(self, del_edge):
         """
@@ -251,8 +215,12 @@ class Transformation:
         for no, edge in enumerate(self._graph.edge_list):
             if edge.id == loop_id:
                 non_loop_edge_index.append(no)
-                non_loop_node_index.append(self._graph.node_list.index(edge.node1))
-                non_loop_node_index.append(self._graph.node_list.index(edge.node2))
+                (node1, node2) = (edge.node1, edge.node2)
+                non_loop_node_index.append(self._graph.node_list.index(node1))
+                non_loop_node_index.append(self._graph.node_list.index(node2))
+                if not only_loop:
+                    self._used_node_array[node1.x + self._space][node1.y + self._space][node1.z + self._space] = False
+                    self._used_node_array[node2.x + self._space][node2.y + self._space][node2.z + self._space] = False
 
         non_loop_edge_index.reverse()
         # 重複した要素を取り除く
@@ -297,6 +265,7 @@ class Transformation:
 
     def __new_node(self, type, x, y, z):
         node = Node(self.__new_node_variable(), type, x, y, z)
+        self._used_node_array[x + self._space][y + self._space][z + self._space] = True
         self._graph.add_node(node)
 
         return node
