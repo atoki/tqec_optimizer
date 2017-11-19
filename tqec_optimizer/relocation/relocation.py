@@ -48,19 +48,15 @@ class Relocation:
             for edge in self._graph.edge_list:
                 if edge.id == loop_id:
                     module_.add_edge(edge)
+                    # ループを構成している辺と交差している辺をモジュールに追加する
+                    for cross_edge in edge.cross_edge_list:
+                        if cross_edge in self._graph.edge_list:
+                            module_.add_cross_edge(cross_edge)
 
             if len(module_.edge_list) == 0:
                 continue
 
             type_ = module_.edge_list[0].type
-            # ループを構成している辺と交差している辺をモジュールに追加する
-            for edge in module_.edge_list:
-                if len(edge.cross_edge_list) == 0:
-                    continue
-
-                for cross_edge in edge.cross_edge_list:
-                    if cross_edge in self._graph.edge_list:
-                        module_.add_cross_edge(cross_edge)
 
             # モジュールを構成する全ての辺から座標とサイズ情報を更新する
             module_.update()

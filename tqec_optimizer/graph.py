@@ -220,9 +220,8 @@ class Graph:
         primal型 qubit defect pair
         初期回路のグラフ化に使用
         """
-        upper = 2
-        lower = 0
-        type = "primal"
+
+        (upper, lower, type) = (2, 0, "primal")
         print("width: ", self._circuit.width)
         print("length:", self._circuit.length)
 
@@ -289,7 +288,7 @@ class Graph:
                 # X基底の観測直前にZ基底の観測、ピンがなければ閉じていないループの番号を0に上書きする
                 remove = True
                 for edge in upper_node1.edge_list:
-                    if edge.category == "bridge" or edge.category == "pin" or edge.category == "cap":
+                    if edge.category == "bridge" or edge.is_injector():
                         remove = False
                 if remove:
                     loop_id = self.__get_front_edge_loop_id(meas["bit"] * 2, self._circuit.length)
@@ -327,10 +326,9 @@ class Graph:
         for operation in self._circuit.operations:
             if operation["type"] == "cnot":
                 self.__create_braidings(no, operation)
-                no += 1
             else:
                 self.__create_state_injection(no, operation)
-                no += 1
+            no += 1
 
     def __create_state_injection(self, no, operation):
         """
@@ -340,8 +338,7 @@ class Graph:
         :param no このState Injectionが作成さらた順番
         :param operation
         """
-        type = "dual"
-        space = 2
+        (type, space) = ("dual", 2)
         target_no = operation["target"]
         node_array = []
 
@@ -411,9 +408,7 @@ class Graph:
         :param no このCNOTが作成さらた順番
         :param cnot
         """
-        type = "dual"
-        # ノード間の距離
-        space = 2
+        (type, space) = ("dual", 2)
         node_array = []
 
         tbit_no_array = copy.deepcopy(cnot["targets"])

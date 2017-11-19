@@ -71,22 +71,18 @@ class Transformation:
                     if edge.is_injector():
                         loop.add_injector(edge)
                     loop.add_edge(edge)
+                    # 交差情報の更新
+                    for cross_edge in edge.cross_edge_list:
+                        loop.add_cross(cross_edge.id)
 
             if len(loop.edge_list) > 0:
                 self._loop_list.append(loop)
-
-        # 交差情報の更新
-        for loop in self._loop_list:
-            for edge in loop.edge_list:
-                for cross_edge in edge.cross_edge_list:
-                    loop.add_cross(cross_edge.id)
 
     def __rule1(self, loop):
         """
         変形規則1
         """
-        if len(loop.cross_list) > 1 or len(loop.cross_list) == 0 \
-                or len(loop.injector_list) > 1 or len(loop.injector_list) == 0:
+        if len(loop.cross_list) != 1 or len(loop.injector_list) != 1:
             return False
 
         cross_loop = self.__loop(loop.cross_list[0])
@@ -163,8 +159,8 @@ class Transformation:
         接続するために追加されたノード, 辺はloopに追加する
 
         :param loop 接続のために生成されたノードと辺を追加するループ
-        :param start ノード
-        :param end ノード
+        :param start 接続元ノード
+        :param end 接続先ノード
         """
         route = BestFirstSearch(start, end, self._used_node_array, self._size, self._space).search()
         self.__create_route(loop, start, end, route)
