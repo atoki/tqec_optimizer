@@ -29,9 +29,9 @@ class Loop:
     def injector_list(self):
         return self._injector_list
 
-    def set_id(self, id):
+    def set_id(self, id_):
         for edge in self._edge_list:
-            edge.set_id(id)
+            edge.set_id(id_)
 
     def add_edge(self, edge):
         self._edge_list.append(edge)

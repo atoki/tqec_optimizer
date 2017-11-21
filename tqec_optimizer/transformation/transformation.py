@@ -1,5 +1,3 @@
-import heapq
-
 from .loop import Loop
 from .best_first_search import BestFirstSearch
 
@@ -8,7 +6,15 @@ from ..graph import Edge
 
 
 class Transformation:
+    """
+    非トポロジー的な変形を行うクラス
+    """
     def __init__(self, graph):
+        """
+        コンストラクタ
+
+        :param graph Graph
+        """
         self._graph = graph
         self._var_node_count = graph.var_node_count
         self._loop_list = []
@@ -31,6 +37,7 @@ class Transformation:
             self._used_node_array[node.x + self._space][node.y + self._space][node.z + self._space] = True
 
     def execute(self):
+        # 閉じていない辺を削除
         self.__delete_loop(0)
         self.__generate_loop()
         # self.__color_loop()
@@ -166,22 +173,34 @@ class Transformation:
         self.__create_route(loop, start, end, route)
 
     def __create_route(self, loop, start, end, route):
+        """
+        start(node)とend(node)を接続するrouteを元に
+        経路をに必要なノードと辺を作成する
+
+        :param loop 接続のために生成されたノードと辺を追加するループ
+        :param start 接続元ノード
+        :param end 接続先ノード
+        :param route 経路に必要なノードの配列
+        """
+        # routeが始点と終点のみで構成されている場合
         if len(route) == 2:
             edge = self.__new__edge(start, end, "edge", loop.id)
             loop.add_edge(edge)
             return
 
-        node_array = route[1:len(route)-1]
-
-        for node in node_array:
-            self.__new_node(node.type, node.x, node.y, node.z)
+        node_array = []
+        # 始点と終点は既にグラフに追加されているため追加しない
+        for node in route[1:len(route)-1]:
+            node = self.__new_node(start.type, node.x, node.y, node.z)
+            node_array.append(node)
 
         node_array.insert(0, start)
         node_array.append(end)
         last_node = None
         for node in node_array:
             if last_node is not None:
-                self.__new__edge(node, last_node, "edge", loop.id)
+                edge = self.__new__edge(node, last_node, "edge", loop.id)
+                loop.add_edge(edge)
             last_node = node
 
     def __delete_edge(self, del_edge):
@@ -247,8 +266,8 @@ class Transformation:
         ループに色付けをして可視化する
         """
         for loop in self._loop_list:
-            id = loop.id
-            color = self.__generate_random_color(id)
+            id_ = loop.id
+            color = self.__generate_random_color(id_)
             for edge in loop.edge_list:
                 edge.set_color(color)
                 edge.node1.set_color(color)
@@ -259,8 +278,8 @@ class Transformation:
             if loop.id == loop_id:
                 return loop
 
-    def __new_node(self, type, x, y, z):
-        node = Node(self.__new_node_variable(), type, x, y, z)
+    def __new_node(self, type_, x, y, z):
+        node = Node(x, y, z, self.__new_node_variable(), type_)
         self._used_node_array[x + self._space][y + self._space][z + self._space] = True
         self._graph.add_node(node)
 

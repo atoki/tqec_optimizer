@@ -1,160 +1,8 @@
 import copy
 
 from .position import Position
-
-
-class Node:
-    def __init__(self, id, type, x, y, z):
-        self._id = id
-        self._type = type
-        self._pos = Position(x, y, z)
-        self._edge_list = []
-        self._color = 0
-
-    def __lt__(self, other):
-        return self.id < other.id
-
-    def __gt__(self, other):
-        return self.id > other.id
-
-    def __hash__(self):
-        return hash((self._pos.x, self._pos.y, self._pos.z))
-
-    def __eq__(self, other):
-        return (self._id, self._pos.x, self._pos.y, self._pos.z) == (other.id, other.x, other.y, other.z)
-
-    def set_type(self, type):
-        self._type = type
-
-    def add_edge(self, edge):
-        self._edge_list.append(edge)
-
-    def set_color(self, color):
-        self._color = color
-
-    def move(self, diff_x, diff_y, diff_z):
-        self._pos.incx(diff_x)
-        self._pos.incy(diff_y)
-        self._pos.incz(diff_z)
-
-    @property
-    def id(self):
-        return self._id
-
-    @property
-    def type(self):
-        return self._type
-
-    @property
-    def color(self):
-        return self._color
-
-    @property
-    def pos(self):
-        return self._pos
-
-    @property
-    def x(self):
-        return int(self._pos.x)
-
-    @property
-    def y(self):
-        return int(self._pos.y)
-
-    @property
-    def z(self):
-        return int(self._pos.z)
-
-    @property
-    def edge_list(self):
-        return self._edge_list
-
-    def debug(self):
-        print("type: {} id: {} ({}, {}, {})".format(self._type, self._id, self._pos.x, self._pos.y, self._pos.z))
-
-
-class Edge:
-    def __init__(self, node1, node2, category, id):
-        self._id = id
-        self._type = node1.type
-        self._category = category
-        self._node1 = node1
-        self._node2 = node2
-        self._cross_edge_list = []
-        self._color = 0
-
-    def set_id(self, id):
-        self._id = id
-
-    def set_type(self, type):
-        self._type = type
-
-    def set_category(self, category):
-        self._category = category
-
-    def set_color(self, color):
-        self._color = color
-
-    def add_cross_edge(self, edge):
-        self._cross_edge_list.append(edge)
-
-    @property
-    def id(self):
-        return self._id
-
-    @property
-    def type(self):
-        return self._type
-
-    @property
-    def category(self):
-        return self._category
-
-    @property
-    def color(self):
-        return self._color
-
-    @property
-    def x(self):
-        return (self._node1.x + self._node2.x) / 2
-
-    @property
-    def y(self):
-        return (self._node1.y + self._node2.y) / 2
-
-    @property
-    def z(self):
-        return (self._node1.z + self._node2.z) / 2
-
-    @property
-    def node1(self):
-        return self._node1
-
-    @property
-    def node2(self):
-        return self._node2
-
-    @property
-    def cross_edge_list(self):
-        return self._cross_edge_list
-
-    def alt_node(self, node):
-        if node == self._node1:
-            return self._node2
-        elif node == self._node2:
-            return self._node1
-        else:
-            assert False
-
-    def is_injector(self):
-        if self._category == "pin" or self._category == "cap":
-            return True
-        return False
-
-    def debug(self):
-        print("type: {} category: {} ({}, {}, {}) -> ({}, {}, {})".format(self._node1.type, self._category,
-                                                                          self._node1.x, self._node1.y, self._node1.z,
-                                                                          self._node2.x, self._node2.y, self._node2.z))
+from .node import Node
+from .edge import Edge
 
 
 class Graph:
@@ -566,14 +414,14 @@ class Graph:
             if edge.id == loop_id:
                 edge.set_id(0)
 
-    def __node(self, x, y, z, id=0):
-        if id == 0:
+    def __node(self, x, y, z, id_=0):
+        if id_ == 0:
             for node in self._node_list:
                 if node.x == x and node.y == y and node.z == z:
                     return node
         else:
             for node in self._node_list:
-                if node.id == id:
+                if node.id == id_:
                     return node
 
     def __edge(self, node1, node2):
@@ -590,14 +438,14 @@ class Graph:
         self._var_loop_count += 1
         return self._var_loop_count
 
-    def __new_node(self, type, x, y, z):
-        node = Node(self.__new_node_variable(), type, x, y, z)
+    def __new_node(self, type_, x, y, z):
+        node = Node(x, y, z, self.__new_node_variable(), type_)
         self._node_list.append(node)
 
         return node
 
-    def __new__edge(self, node1, node2, category, id=0):
-        edge = Edge(node1, node2, category, id)
+    def __new__edge(self, node1, node2, category, id_=0):
+        edge = Edge(node1, node2, category, id_)
         node1.add_edge(edge)
         node2.add_edge(edge)
         self.edge_list.append(edge)

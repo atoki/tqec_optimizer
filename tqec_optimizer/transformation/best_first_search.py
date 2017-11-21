@@ -12,12 +12,12 @@ class BestFirstSearch:
         self._size = size
 
     def search(self):
-        first = Node(0, "first", self._src.x, self._src.y, self._src.z)
-        last = Node(0, "last", self._dst.x, self._dst.y, self._dst.z)
+        first = Node(self._src.x, self._src.y, self._src.z)
+        last = Node(self._dst.x, self._dst.y, self._dst.z)
 
         queue = []
         # keyは探索済みノード. valueはその前のノード
-        visited_node = {first: Node(-1, self._src.type, 0, 0, 0)}
+        visited_node = {first: Node(0, 0, 0)}
         heapq.heappush(queue, (0, first))
         while len(queue) != 0:
             current_node_cost, current_node = heapq.heappop(queue)
@@ -57,7 +57,7 @@ class BestFirstSearch:
         dz = [0, 0, 0, 0, 2, -2]
 
         for i in range(6):
-            next_node = Node(0, self._src.type, node.x + dx[i], node.y + dy[i], node.z + dz[i])
+            next_node = Node(node.x + dx[i], node.y + dy[i], node.z + dz[i])
             if not self.__is_prohibit(next_node):
                 expanded_nodes.append(next_node)
 

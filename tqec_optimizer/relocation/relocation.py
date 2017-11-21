@@ -87,8 +87,8 @@ class Relocation:
         モジュールに色付けをして可視化する
         """
         for module_ in self._dual_module_list:
-            id = module_.id
-            color = self.__generate_random_color(id)
+            id_ = module_.id
+            color = self.__generate_random_color(id_)
             for edge in module_.edge_list + module_.cross_edge_list:
                 edge.set_color(color)
                 edge.node1.set_color(color)
