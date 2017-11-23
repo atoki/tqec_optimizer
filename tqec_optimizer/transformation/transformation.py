@@ -39,7 +39,7 @@ class Transformation:
     def execute(self):
         # 閉じていない辺を削除
         self.__delete_loop(0)
-        self.__generate_loop()
+        self.__create_loop()
         # self.__color_loop()
 
         reduction = True
@@ -64,7 +64,7 @@ class Transformation:
                     no += 1
                     break
 
-    def __generate_loop(self):
+    def __create_loop(self):
         """
         ループを生成する
         """

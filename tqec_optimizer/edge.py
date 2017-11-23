@@ -16,6 +16,7 @@ class Edge:
         self._category = category
         self._node1 = node1
         self._node2 = node2
+        self._dir = self.__calc_direction()
         self._cross_edge_list = []
         self._color = 0
 
@@ -71,6 +72,10 @@ class Edge:
         return self._node2
 
     @property
+    def dir(self):
+        return self._dir
+
+    @property
     def cross_edge_list(self):
         return self._cross_edge_list
 
@@ -86,6 +91,16 @@ class Edge:
         if self._category == "pin" or self._category == "cap":
             return True
         return False
+
+    def __calc_direction(self):
+        if self._node1.x != self._node2.x:
+            direction = 'X'
+        elif self._node1.y != self._node2.y:
+            direction = 'Y'
+        else:
+            direction = 'Z'
+
+        return direction
 
     def debug(self):
         print("type: {} category: {} ({}, {}, {}) -> ({}, {}, {})".format(self._node1.type, self._category,
