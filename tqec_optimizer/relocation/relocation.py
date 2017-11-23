@@ -3,7 +3,7 @@ import math
 from .module import Module
 from .sequence_triple import SequenceTriple
 
-from ..graph import Graph
+from ..graph import *
 
 
 class Relocation:
@@ -14,6 +14,7 @@ class Relocation:
         self._graph = graph
         self._primal_module_list = []
         self._dual_module_list = []
+        self._var_node_count = 0
 
     def execute(self):
         """
@@ -37,8 +38,8 @@ class Relocation:
         #
         # graph = self.__module_to_graph(module_list)
         #
-        # graph = self.__module_to_graph(self._dual_module_list)
-        # return graph
+        graph = self.__module_to_graph(self._dual_module_list)
+        return graph
 
     def __create_module(self):
         """
@@ -61,7 +62,10 @@ class Relocation:
             # ループを構成している辺と交差している辺をモジュールに追加する
             for edge_pair in edge_pair_list:
                 for cross_edge in self.__create_cross_edge_list(module_, edge_pair[0], edge_pair[1]):
-                    module_.add_cross_edge(cross_edge)
+                    joint1 = self.__new_joint(cross_edge.node1)
+                    joint2 = self.__new_joint(cross_edge.node2)
+                    new_cross_edge = self.__new__edge(joint1, joint2, cross_edge.category, cross_edge.id)
+                    module_.add_cross_edge(new_cross_edge)
 
             type_ = module_.edge_list[0].type
 
@@ -135,7 +139,8 @@ class Relocation:
     def __expand_edge(self):
         pass
 
-    def __module_to_graph(self, module_list):
+    @staticmethod
+    def __to_graph(module_list):
         """
         モジュールを構成するノードと辺の情報をもとにグラフクラスを作成する
 
@@ -154,6 +159,22 @@ class Relocation:
         for edge in self._graph.edge_list:
             if edge.x == x and edge.y == y and edge.z == z:
                 return edge
+
+    def __new_node_variable(self):
+        self._var_node_count += 1
+        return self._var_node_count
+
+    def __new_joint(self, node):
+        joint = Node(node.x, node.y, node.z, self.__new_node_variable(), node.type)
+
+        return joint
+
+    def __new__edge(self, node1, node2, category, id_=0):
+        edge = Edge(node1, node2, category, id_)
+        node1.add_edge(edge)
+        node2.add_edge(edge)
+
+        return edge
 
     def __color_module(self):
         """

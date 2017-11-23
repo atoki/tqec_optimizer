@@ -81,3 +81,15 @@ class Node:
 
     def debug(self):
         print("type: {} id: {} ({}, {}, {})".format(self._type, self._id, self._pos.x, self._pos.y, self._pos.z))
+
+
+class Joint(Node):
+    def __init__(self, x, y, z, id_=0, type_="none"):
+        super().__init__(x, y, z, id_, type_)
+        self._target_node = None
+
+    def set_target_node(self, target_node):
+        self._target_node = target_node
+
+    def target_node(self):
+        return self._target_node
