@@ -64,6 +64,8 @@ class Transformation:
                     no += 1
                     break
 
+        # self.__color_loop()
+
     def __create_loop(self):
         """
         ループを生成する
@@ -151,6 +153,7 @@ class Transformation:
         """
         for edge in loop2.edge_list:
             loop1.add_edge(edge)
+            edge.set_id(loop1.id)
 
         for cross_id in loop2.cross_list:
             loop1.add_cross(cross_id)
