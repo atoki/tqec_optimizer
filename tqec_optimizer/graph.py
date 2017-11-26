@@ -57,6 +57,9 @@ class Graph:
     def var_node_count(self):
         return self._var_node_count
 
+    def set_loop_count(self, loop_count):
+        self._var_loop_count = loop_count
+
     def add_node(self, node):
         self._node_list.append(node)
 

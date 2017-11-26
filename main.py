@@ -46,7 +46,7 @@ def main():
     graph = Graph(circuit)
 
     # optimization of non topology
-    # Transformation(graph).execute()
+    Transformation(graph).execute()
 
     # optimization of topology
     graph = Relocation(graph).execute()

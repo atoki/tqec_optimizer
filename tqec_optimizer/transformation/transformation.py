@@ -48,7 +48,7 @@ class Transformation:
         while reduction:
             print("-step{}".format(no))
             for loop in self._loop_list:
-                reduction = self.__rule2(loop)
+                reduction = self.__rule1(loop)
                 if reduction:
                     no += 1
                     break
@@ -59,7 +59,7 @@ class Transformation:
         while reduction:
             print("-step{}".format(no))
             for loop in self._loop_list:
-                reduction = self.__rule1(loop)
+                reduction = self.__rule2(loop)
                 if reduction:
                     no += 1
                     break

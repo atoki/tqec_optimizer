@@ -49,7 +49,7 @@ class RipAndReroute:
         """
         # routeが始点と終点のみで構成されている場合
         if len(route) == 2:
-            edge = self.__new__edge(src, dst, "edge", 0)
+            edge = self.__new__edge(src, dst, "edge", src.id)
             return
 
         node_array = []
@@ -63,7 +63,7 @@ class RipAndReroute:
         last_node = None
         for node in node_array:
             if last_node is not None:
-                edge = self.__new__edge(node, last_node, "edge", 0)
+                edge = self.__new__edge(node, last_node, "edge", src.id)
             last_node = node
 
     def __new_node_variable(self):

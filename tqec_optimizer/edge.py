@@ -20,6 +20,10 @@ class Edge:
         self._cross_edge_list = []
         self._color = 0
 
+    def __eq__(self, other):
+        return ((self._node1.x + self._node2.x) / 2, (self._node1.y + self._node2.y) / 2,
+                (self._node1.z + self._node2.z) / 2) == (other.x, other.y, other.z)
+
     def set_id(self, id_):
         self._id = id_
 
@@ -103,6 +107,6 @@ class Edge:
         return direction
 
     def debug(self):
-        print("type: {} category: {} ({}, {}, {}) -> ({}, {}, {})".format(self._node1.type, self._category,
-                                                                          self._node1.x, self._node1.y, self._node1.z,
-                                                                          self._node2.x, self._node2.y, self._node2.z))
+        print("type: {} id: {} category: {} ({}, {}, {}) -> ({}, {}, {})".format(self._node1.type, self._category, self.id_,
+                                                                                 self._node1.x, self._node1.y, self._node1.z,
+                                                                                 self._node2.x, self._node2.y, self._node2.z))
