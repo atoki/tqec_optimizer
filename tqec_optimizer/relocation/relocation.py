@@ -2,8 +2,12 @@ import math
 
 from .module import Module
 from .sequence_triple import SequenceTriple
+from .tsp import TSP
+from .rip_and_reroute import RipAndReroute
 
-from ..graph import *
+from ..graph import Graph
+from ..node import *
+from ..edge import Edge
 
 
 class Relocation:
@@ -12,8 +16,8 @@ class Relocation:
     """
     def __init__(self, graph):
         self._graph = graph
-        self._primal_module_list = []
-        self._dual_module_list = []
+        self._module_list = []
+        self._joint_pair_list = []
         self._var_node_count = 0
 
     def execute(self):
@@ -23,25 +27,22 @@ class Relocation:
         3.再配置したモジュールの再接続を行う
         4.コストが減少しなくなるまで 2.3 を繰り返す
         """
-        self.__create_module()
-        self.__color_module()
+        self.__create_module("dual")
+        # self.__color_module()
+        # self.__color_joint()
 
-        # primal defect
-        # place = SequenceTriple("primal", self._primal_module_list, (6, 6, 20))
+        # optimization
+        # place = SequenceTriple("dual", self._module_list, (6, 6, 20))
         # place.build_permutation()
         # module_list = place.recalculate_coordinate()
 
-        # dual defect
-        # place = SequenceTriple("dual", self._dual_module_list, (6, 6, 20))
-        # place.build_permutation()
-        # module_list = place.recalculate_coordinate()
-        #
-        # graph = self.__module_to_graph(module_list)
-        #
-        graph = self.__module_to_graph(self._dual_module_list)
+        route_pair = TSP(self._joint_pair_list).search()
+        graph = self.__to_graph(self._module_list)
+        RipAndReroute(graph, route_pair).search()
+
         return graph
 
-    def __create_module(self):
+    def __create_module(self, type_):
         """
         モジュールを生成する
         """
@@ -51,7 +52,7 @@ class Relocation:
 
             # ループを構成している辺をモジュールに追加する
             for edge in self._graph.edge_list:
-                if edge.id == loop_id:
+                if edge.id == loop_id and edge.type == type_:
                     module_.add_edge(edge)
                     if len(edge.cross_edge_list) > 0 and edge.cross_edge_list[0] in self._graph.edge_list:
                         edge_pair_list.append((edge, edge.cross_edge_list[0]))
@@ -61,25 +62,30 @@ class Relocation:
 
             # ループを構成している辺と交差している辺をモジュールに追加する
             for edge_pair in edge_pair_list:
-                for cross_edge in self.__create_cross_edge_list(module_, edge_pair[0], edge_pair[1]):
-                    joint1 = self.__new_joint(cross_edge.node1)
-                    joint2 = self.__new_joint(cross_edge.node2)
-                    new_cross_edge = self.__new__edge(joint1, joint2, cross_edge.category, cross_edge.id)
-                    module_.add_cross_edge(new_cross_edge)
-
-            type_ = module_.edge_list[0].type
+                cross_node_list = self.__create_cross_node_list(module_, edge_pair[0], edge_pair[1])
+                loop_id = edge_pair[1].id
+                (joint1, joint2) = (None, None)
+                (end1, end2) = (None, None)
+                for no, cross_node in enumerate(cross_node_list):
+                    id_ = loop_id if no == 0 or no == len(cross_node_list) - 1 else -1
+                    joint1 = self.__new_joint(cross_node, id_)
+                    if no == 0:
+                        end1 = joint1
+                    if no == len(cross_node_list) - 1:
+                        end2 = joint1
+                    if joint2 is not None:
+                        new_cross_edge = self.__new__edge(joint1, joint2, "edge", loop_id)
+                        module_.add_cross_edge(new_cross_edge)
+                    joint2 = joint1
+                self._joint_pair_list.append((end1, end2))
 
             # モジュールを構成する全ての辺から座標とサイズ情報を更新する
             module_.update()
 
             # モジュールの中身があればリストに追加
-            if type_ == "primal":
-                self._primal_module_list.append(module_)
-            else:
-                self._dual_module_list.append(module_)
+            self._module_list.append(module_)
 
-    def __create_cross_edge_list(self, module_, border1, cross_edge):
-        cross_edge_list = []
+    def __create_cross_node_list(self, module_, border1, cross_edge):
         (min_, max_) = (math.inf, -math.inf)
 
         if border1.dir == 'X':
@@ -114,30 +120,52 @@ class Relocation:
                     break
 
         if min_ == math.inf or max_ == math.inf:
-            return cross_edge_list
+            return []
+
+        cross_node_list = self.__expand_edge((min_, max_), cross_edge)
+        return cross_node_list
+
+    def __expand_edge(self, range_, cross_edge):
+        cross_node_list = []
+        (min_, max_) = (range_[0], range_[1])
+
+        if min_ == math.inf or max_ == math.inf:
+            return cross_node_list
 
         if cross_edge.dir == 'X':
-            y = cross_edge.y
-            z = cross_edge.z
+            (y, z) = (cross_edge.y, cross_edge.z)
             for x in range(int(min_), int(max_) + 1, 2):
-                cross_edge_list.append(self.__edge(x, y, z))
+                edge = self.__edge(x, y, z)
+                if edge is None:
+                    break
+                cross_node_list.append(edge.node1)
+                cross_node_list.append(edge.node2)
+            cross_node_list = list(set(cross_node_list))
+            cross_node_list.sort(key=lambda m: (m.x))
 
-        if cross_edge.dir == 'Y':
-            x = cross_edge.x
-            z = cross_edge.z
+        elif cross_edge.dir == 'Y':
+            (x, z) = (cross_edge.x, cross_edge.z)
             for y in range(int(min_), int(max_) + 1, 2):
-                cross_edge_list.append(self.__edge(x, y, z))
+                edge = self.__edge(x, y, z)
+                if edge is None:
+                    break
+                cross_node_list.append(edge.node1)
+                cross_node_list.append(edge.node2)
+            cross_node_list = list(set(cross_node_list))
+            cross_node_list.sort(key=lambda m: (m.y))
 
-        if cross_edge.dir == 'Z':
-            x = cross_edge.x
-            y = cross_edge.y
+        else:
+            (x, y) = (cross_edge.x, cross_edge.y)
             for z in range(int(min_), int(max_) + 1, 2):
-                cross_edge_list.append(self.__edge(x, y, z))
+                edge = self.__edge(x, y, z)
+                if edge is None:
+                    break
+                cross_node_list.append(edge.node1)
+                cross_node_list.append(edge.node2)
+            cross_node_list = list(set(cross_node_list))
+            cross_node_list.sort(key=lambda m: (m.z))
 
-        return cross_edge_list
-
-    def __expand_edge(self):
-        pass
+        return cross_node_list
 
     @staticmethod
     def __to_graph(module_list):
@@ -160,12 +188,14 @@ class Relocation:
             if edge.x == x and edge.y == y and edge.z == z:
                 return edge
 
+        return None
+
     def __new_node_variable(self):
         self._var_node_count += 1
         return self._var_node_count
 
-    def __new_joint(self, node):
-        joint = Node(node.x, node.y, node.z, self.__new_node_variable(), node.type)
+    def __new_joint(self, node, id_=0):
+        joint = Joint(node.x, node.y, node.z, id_, node.type)
 
         return joint
 
@@ -176,11 +206,21 @@ class Relocation:
 
         return edge
 
+    def __color_joint(self):
+        """
+        接続部に色付けをして可視化する
+        """
+        for node_pair in self._joint_pair_list:
+            id_ = node_pair[0].id
+            color = self.__create_random_color(id_)
+            node_pair[0].set_color(color)
+            node_pair[1].set_color(color)
+
     def __color_module(self):
         """
         モジュールに色付けをして可視化する
         """
-        for module_ in self._dual_module_list:
+        for module_ in self._module_list:
             id_ = module_.id
             color = self.__create_random_color(id_)
             for edge in module_.edge_list + module_.cross_edge_list:
@@ -195,9 +235,7 @@ class Relocation:
         return colors[loop_id % 10]
 
     def debug(self):
-        print("--- primal module list ---")
-        for module_ in self._primal_module_list:
+        print("--- module list ---")
+        for module_ in self._module_list:
             module_.debug()
-        print("--- dual module list ---")
-        for module_ in self._dual_module_list:
-            module_.debug()
+

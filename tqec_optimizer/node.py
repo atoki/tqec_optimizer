@@ -31,7 +31,7 @@ class Node:
         return hash((self._pos.x, self._pos.y, self._pos.z))
 
     def __eq__(self, other):
-        return (self._id, self._pos.x, self._pos.y, self._pos.z) == (other.id, other.x, other.y, other.z)
+        return (self._pos.x, self._pos.y, self._pos.z) == (other.x, other.y, other.z)
 
     def set_type(self, type_):
         self._type = type_
@@ -46,6 +46,14 @@ class Node:
         self._pos.incx(diff_x)
         self._pos.incy(diff_y)
         self._pos.incz(diff_z)
+
+    def dist(self, node):
+        """
+        マンハッタン距離
+
+        :param node 対象となるノード
+        """
+        return abs(self._pos.x - node.x) + abs(self._pos.y - node.y) + abs(self._pos.z - node.z)
 
     @property
     def id(self):

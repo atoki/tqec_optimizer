@@ -49,7 +49,7 @@ def main():
     # Transformation(graph).execute()
 
     # optimization of topology
-    # graph = Relocation(graph).execute()
+    graph = Relocation(graph).execute()
 
     # output
     CircuitWriter(graph).write(output_file)

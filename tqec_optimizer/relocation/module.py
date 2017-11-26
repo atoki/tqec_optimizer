@@ -16,6 +16,7 @@ class Module:
         self._id = module_id
         self._edge_list = []
         self._cross_edge_list = []
+        self._joint_pair_list = []
         self._pos = Position()
         self._width = 0
         self._height = 0
