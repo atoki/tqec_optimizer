@@ -100,12 +100,12 @@ class Module:
                 node = edge.node1 if n == 1 else edge.node2
 
                 # モジュールの最小、最大値を更新する
-                min_x = min(node.x - 1, min_x)
-                min_y = min(node.y - 1, min_y)
-                min_z = min(node.z - 1, min_z)
-                max_x = max(node.x + 1, max_x)
-                max_y = max(node.y + 1, max_y)
-                max_z = max(node.z + 1, max_z)
+                min_x = min(node.x, min_x)
+                min_y = min(node.y, min_y)
+                min_z = min(node.z, min_z)
+                max_x = max(node.x, max_x)
+                max_y = max(node.y, max_y)
+                max_z = max(node.z, max_z)
 
         # (x,y,z)が最小となる座標(pos)とモジュールの大きさを計算する
         for edge in self._cross_edge_list:

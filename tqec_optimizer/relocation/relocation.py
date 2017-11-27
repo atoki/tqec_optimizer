@@ -34,13 +34,13 @@ class Relocation:
         # module_list = place.recalculate_coordinate()
 
         module_list, joint_pair_list = ModuleListFactory(self._graph, "dual").create()
-        route_pair = TSP(joint_pair_list).search()
+        # route_pair = TSP(joint_pair_list).search()
         graph = self.__to_graph(module_list)
-        RipAndReroute(graph, route_pair).search()
+        # RipAndReroute(graph, route_pair).search()
         # self.__color_cross_edge(module_list)
         # self.__color_graph(graph)
 
-        module_list, joint_pair_list = ModuleListFactory(graph, "primal").create()
+        # module_list, joint_pair_list = ModuleListFactory(graph, "primal").create()
         # for module_ in module_list:
         #     module_.debug()
         # for joint_pair in joint_pair_list:
@@ -49,7 +49,7 @@ class Relocation:
         #
         # self.__color_jont(joint_pair_list)
         # route_pair = TSP(joint_pair_list).search()
-        graph = self.__to_graph(module_list)
+        # graph = self.__to_graph(module_list)
         # self.__color_graph(graph)
         # self.__color_module(module_list)
         # RipAndReroute(graph, route_pair).search()
