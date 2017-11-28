@@ -28,16 +28,12 @@ class Relocation:
         3.再配置したモジュールの再接続を行う
         4.コストが減少しなくなるまで 2.3 を繰り返す
         """
-        # optimization
-        # place = SequenceTriple("primal", self._module_list, (6, 6, 20))
-        # place.build_permutation()
-        # module_list = place.recalculate_coordinate()
-
         module_list, joint_pair_list = ModuleListFactory(self._graph, "dual").create()
         route_pair = TSP(joint_pair_list).search()
         # place = SequenceTriple("dual", module_list, (6, 6, 20))
         # place.build_permutation()
         # module_list = place.recalculate_coordinate()
+        # self.__color_cross_edge(module_list)
         graph = self.__to_graph(module_list)
         RipAndReroute(graph, route_pair).search()
 
@@ -92,9 +88,9 @@ class Relocation:
         モジュールに色付けをして可視化する
         """
         for module_ in module_list:
-            id_ = module_.id
-            color = self.__create_random_color(id_)
             for edge in module_.cross_edge_list:
+                id_ = edge.id
+                color = self.__create_random_color(id_)
                 edge.set_color(color)
                 edge.node1.set_color(color)
                 edge.node2.set_color(color)

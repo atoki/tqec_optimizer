@@ -40,18 +40,25 @@ class ModuleListFactory:
         min_y, max_y = module_.pos.y, module_.pos.y + module_.height
         min_z, max_z = module_.pos.z, module_.pos.z + module_.depth
 
+        used_node = {}
         for edge in self._graph.edge_list:
             if edge.type == self._type:
                 continue
 
-            if min_x <= edge.x <= max_x \
-                and min_y <= edge.y <= max_y \
-                    and min_z <= edge.z <= max_z:
-                joint1 = self.__new_joint(edge.node1, edge.id)
-                joint2 = self.__new_joint(edge.node2, edge.id)
+            if min_x < edge.x < max_x \
+                    and min_y < edge.y < max_y \
+                    and min_z < edge.z < max_z:
+                joint1 = used_node[edge.node1] \
+                    if edge.node1 in used_node \
+                    else self.__new_joint(edge.node1, edge.id)
+                joint2 = used_node[edge.node2] \
+                    if edge.node2 in used_node \
+                    else self.__new_joint(edge.node2, edge.id)
                 cross_edge = self.__new__edge(joint1, joint2, "edge", edge.id)
                 module_.add_cross_edge(cross_edge)
                 self._joint_pair_list.append((joint1, joint2))
+                used_node[edge.node1] = joint1
+                used_node[edge.node2] = joint2
 
     def __edge(self, x, y, z):
         for edge in self._graph.edge_list:
