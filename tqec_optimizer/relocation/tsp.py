@@ -54,6 +54,10 @@ class TSP:
                 self._end_map[end_pair[1]] = self._end_map[end_pair[0]]
                 self._end_map[self._end_map[end_pair[0]]] = end_pair[1]
                 del self._end_map[end_pair[0]]
+            elif end_pair[1] in self._end_map:
+                self._end_map[end_pair[0]] = self._end_map[end_pair[1]]
+                self._end_map[self._end_map[end_pair[1]]] = end_pair[0]
+                del self._end_map[end_pair[1]]
             else:
                 self._end_map[end_pair[0]] = end_pair[1]
                 self._end_map[end_pair[1]] = end_pair[0]

@@ -29,29 +29,21 @@ class Relocation:
         4.コストが減少しなくなるまで 2.3 を繰り返す
         """
         # optimization
-        # place = SequenceTriple("dual", self._module_list, (6, 6, 20))
+        # place = SequenceTriple("primal", self._module_list, (6, 6, 20))
         # place.build_permutation()
         # module_list = place.recalculate_coordinate()
 
         module_list, joint_pair_list = ModuleListFactory(self._graph, "dual").create()
-        # route_pair = TSP(joint_pair_list).search()
+        route_pair = TSP(joint_pair_list).search()
+        # place = SequenceTriple("dual", module_list, (6, 6, 20))
+        # place.build_permutation()
+        # module_list = place.recalculate_coordinate()
         graph = self.__to_graph(module_list)
-        # RipAndReroute(graph, route_pair).search()
-        # self.__color_cross_edge(module_list)
-        # self.__color_graph(graph)
+        RipAndReroute(graph, route_pair).search()
 
         # module_list, joint_pair_list = ModuleListFactory(graph, "primal").create()
-        # for module_ in module_list:
-        #     module_.debug()
-        # for joint_pair in joint_pair_list:
-        #     joint_pair[0].debug()
-        #     joint_pair[1].debug()
-        #
-        # self.__color_jont(joint_pair_list)
         # route_pair = TSP(joint_pair_list).search()
         # graph = self.__to_graph(module_list)
-        # self.__color_graph(graph)
-        # self.__color_module(module_list)
         # RipAndReroute(graph, route_pair).search()
 
         return graph

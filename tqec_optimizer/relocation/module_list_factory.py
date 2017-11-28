@@ -39,7 +39,6 @@ class ModuleListFactory:
         min_x, max_x = module_.pos.x, module_.pos.x + module_.width
         min_y, max_y = module_.pos.y, module_.pos.y + module_.height
         min_z, max_z = module_.pos.z, module_.pos.z + module_.depth
-        color = self.__create_random_color(module_.id)
 
         for edge in self._graph.edge_list:
             if edge.type == self._type:
@@ -48,12 +47,11 @@ class ModuleListFactory:
             if min_x <= edge.x <= max_x \
                 and min_y <= edge.y <= max_y \
                     and min_z <= edge.z <= max_z:
-                joint1 = self.__new_joint(edge.node1, module_.id)
-                joint2 = self.__new_joint(edge.node2, module_.id)
-                cross_edge = self.__new__edge(joint1, joint2, "edge", module_.id)
-                cross_edge.set_color(color)
+                joint1 = self.__new_joint(edge.node1, edge.id)
+                joint2 = self.__new_joint(edge.node2, edge.id)
+                cross_edge = self.__new__edge(joint1, joint2, "edge", edge.id)
                 module_.add_cross_edge(cross_edge)
-                self._joint_pair_list.append((joint1, joint2, module_.id))
+                self._joint_pair_list.append((joint1, joint2))
 
     def __edge(self, x, y, z):
         for edge in self._graph.edge_list:
