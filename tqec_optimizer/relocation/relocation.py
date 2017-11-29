@@ -7,7 +7,7 @@ from .tsp import TSP
 from .rip_and_reroute import RipAndReroute
 
 from ..graph import Graph
-from ..node import *
+from ..node import Node
 from ..edge import Edge
 
 
@@ -33,14 +33,16 @@ class Relocation:
         # place = SequenceTriple("dual", module_list, (6, 6, 20))
         # place.build_permutation()
         # module_list = place.recalculate_coordinate()
-        # self.__color_cross_edge(module_list)
         graph = self.__to_graph(module_list)
         RipAndReroute(graph, route_pair).search()
 
-        # module_list, joint_pair_list = ModuleListFactory(graph, "primal").create()
-        # route_pair = TSP(joint_pair_list).search()
-        # graph = self.__to_graph(module_list)
-        # RipAndReroute(graph, route_pair).search()
+        module_list, joint_pair_list = ModuleListFactory(graph, "primal").create()
+        route_pair = TSP(joint_pair_list).search()
+        # place = SequenceTriple("primal", module_list, (6, 6, 20))
+        # place.build_permutation()
+        # module_list = place.recalculate_coordinate()
+        graph = self.__to_graph(module_list)
+        RipAndReroute(graph, route_pair).search()
 
         return graph
 
@@ -52,13 +54,29 @@ class Relocation:
         """
         graph = Graph()
         graph.set_loop_count(self._graph.loop_count)
+        added_node = {}
         for module_ in module_list:
             for edge in module_.edge_list + module_.cross_edge_list:
+                color = edge.color
+                node1 = added_node[edge.node1] if edge.node1 in added_node else edge.node1
+                node2 = added_node[edge.node2] if edge.node2 in added_node else edge.node2
+                edge = self.__new__edge(node1, node2, edge.category, edge.id)
+                edge.set_color(color)
                 graph.add_edge(edge)
-                graph.add_node(edge.node1)
-                graph.add_node(edge.node2)
+                if edge.node1 not in added_node:
+                    graph.add_node(node1)
+                    added_node[edge.node1] = node1
+                if edge.node2 not in added_node:
+                    graph.add_node(node2)
+                    added_node[edge.node2] = node2
 
         return graph
+
+    @staticmethod
+    def __new__edge(node1, node2, category, id_=0):
+        edge = Edge(node1, node2, category, id_)
+
+        return edge
 
     def __color_module(self, module_list):
         """
