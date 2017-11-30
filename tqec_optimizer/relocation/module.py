@@ -18,9 +18,13 @@ class Module:
         self._cross_edge_list = []
         self._joint_pair_list = []
         self._pos = Position()
+        self._inner_pos = Position()
         self._width = 0
         self._height = 0
         self._depth = 0
+        self._inner_width = 0
+        self._inner_height = 0
+        self._inner_depth = 0
 
     @property
     def id(self):
@@ -35,6 +39,10 @@ class Module:
         return self._pos
 
     @property
+    def inner_pos(self):
+        return self._inner_pos
+
+    @property
     def width(self):
         return self._width
 
@@ -45,6 +53,18 @@ class Module:
     @property
     def depth(self):
         return self._depth
+
+    @property
+    def inner_width(self):
+        return self._inner_width
+
+    @property
+    def inner_height(self):
+        return self._inner_height
+
+    @property
+    def inner_depth(self):
+        return self._inner_depth
 
     @property
     def edge_list(self):
@@ -106,6 +126,11 @@ class Module:
                 max_x = max(node.x + 1, max_x)
                 max_y = max(node.y + 1, max_y)
                 max_z = max(node.z + 1, max_z)
+
+        self._inner_pos.set(min_x, min_y, min_z)
+        self._inner_width = max_x - min_x
+        self._inner_height = max_y - min_y
+        self._inner_depth = max_z - min_z
 
         # (x,y,z)が最小となる座標(pos)とモジュールの大きさを計算する
         for edge in self._cross_edge_list:

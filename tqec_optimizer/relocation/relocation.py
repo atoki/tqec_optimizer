@@ -34,7 +34,7 @@ class Relocation:
         # place.build_permutation()
         # module_list = place.recalculate_coordinate()
         graph = self.__to_graph(module_list)
-        RipAndReroute(graph, route_pair).search()
+        RipAndReroute(graph, module_list, route_pair).search()
 
         module_list, joint_pair_list = ModuleListFactory(graph, "primal").create()
         route_pair = TSP(joint_pair_list).search()
@@ -42,7 +42,7 @@ class Relocation:
         # place.build_permutation()
         # module_list = place.recalculate_coordinate()
         graph = self.__to_graph(module_list)
-        RipAndReroute(graph, route_pair).search()
+        RipAndReroute(graph, module_list, route_pair).search()
 
         return graph
 
