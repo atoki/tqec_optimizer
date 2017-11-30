@@ -34,6 +34,13 @@ class SequenceTriple:
         # sort permutation1
         self._permutation1.sort(key=lambda m: m.pos.y, reverse=True)
 
+        return self._permutation1, self._permutation2, self._permutation3
+
+    def set_permutation(self, permutations):
+        self._permutation1 = permutations[0]
+        self._permutation2 = permutations[1]
+        self._permutation3 = permutations[2]
+
     def recalculate_coordinate(self):
         for module_ in self._permutation3:
             id_ = module_.id
@@ -104,9 +111,3 @@ class SequenceTriple:
             z = max(z, module_.pos.z + module_.depth)
 
         return z
-
-    def swap(self):
-        pass
-
-    def shift(self):
-        pass

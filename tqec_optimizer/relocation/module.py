@@ -106,6 +106,8 @@ class Module:
             for node in move_node_list:
                 node.move(diff_x, diff_y, diff_z)
 
+            self.update()
+
         self._pos = position
 
     def update(self):
