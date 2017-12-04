@@ -37,6 +37,7 @@ class SequenceTriple:
         return self._permutation1, self._permutation2, self._permutation3
 
     def set_permutation(self, permutations):
+        self._placed = [False for no in range(0, 100)]
         self._permutation1 = permutations[0]
         self._permutation2 = permutations[1]
         self._permutation3 = permutations[2]
@@ -54,6 +55,7 @@ class SequenceTriple:
         p2_list = set()
         flag = False
         for module_ in self._permutation2:
+            module_.debug()
             if module_.id == id_:
                 flag = True
             if not flag:
