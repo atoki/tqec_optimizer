@@ -55,7 +55,6 @@ class SequenceTriple:
         p2_list = set()
         flag = False
         for module_ in self._permutation2:
-            module_.debug()
             if module_.id == id_:
                 flag = True
             if not flag:

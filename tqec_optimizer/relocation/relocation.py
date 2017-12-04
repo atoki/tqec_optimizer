@@ -32,14 +32,10 @@ class Relocation:
         4.コストが減少しなくなるまで 2.3 を繰り返す
         """
         module_list, joint_pair_list = ModuleListFactory(self._graph, "dual").create()
-        route_pair = TSP(joint_pair_list).search()
         place = SequenceTriple("dual", module_list, (6, 6, 20))
         p1, p2, p3 = place.build_permutation()
         swap_permutations_list = SwapNeighborhoodGenerator((p1, p2, p3)).generator()
         shift_permutations_list = ShiftNeighborhoodGenerator((p1, p2, p3)).generator()
-
-        # place.set_permutation(swap_permutations_list[10])
-        # module_list = place.recalculate_coordinate()
 
         for step, permutations in enumerate(swap_permutations_list + shift_permutations_list):
             print("-- {} --".format(step))
@@ -48,17 +44,9 @@ class Relocation:
             if step == 3:
                 break
 
-        # module_list = place.recalculate_coordinate()
+        route_pair = TSP(joint_pair_list).search()
         graph = self.__to_graph(module_list)
-        # RipAndReroute(graph, module_list, route_pair).search()
-
-        # module_list, joint_pair_list = ModuleListFactory(graph, "primal").create()
-        # route_pair = TSP(joint_pair_list).search()
-        # place = SequenceTriple("primal", module_list, (6, 6, 20))
-        # place.build_permutation()
-        # module_list = place.recalculate_coordinate()
-        # graph = self.__to_graph(module_list)
-        # RipAndReroute(graph, module_list, route_pair).search()
+        RipAndReroute(graph, module_list, route_pair).search()
 
         return graph
 
