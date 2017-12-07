@@ -72,8 +72,11 @@ class SequenceTriple:
     def __find_y(self, id_):
         p1_list = set()
         p2_list = set()
+        flag = False
         for module_ in self._permutation1:
-            if module_.id <= id_:
+            if module_.id == id_:
+                flag = True
+            if not flag:
                 continue
             if self._placed[module_.id]:
                 p1_list.add(module_)

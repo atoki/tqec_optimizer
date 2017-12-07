@@ -31,7 +31,19 @@ class Relocation:
         3.再配置したモジュールの再接続を行う
         4.コストが減少しなくなるまで 2.3 を繰り返す
         """
+        # init dual module
         module_list, joint_pair_list = ModuleListFactory(self._graph, "dual").create()
+        route_pair = TSP(joint_pair_list).search()
+        graph = self.__to_graph(module_list)
+        RipAndReroute(graph, module_list, route_pair).search()
+
+        # init primal module
+        module_list, joint_pair_list = ModuleListFactory(graph, "primal").create()
+        route_pair = TSP(joint_pair_list).search()
+        graph = self.__to_graph(module_list)
+        RipAndReroute(graph, module_list, route_pair).search()
+
+        module_list, joint_pair_list = ModuleListFactory(graph, "dual").create()
         place = SequenceTriple("dual", module_list, (6, 6, 20))
         p1, p2, p3 = place.build_permutation()
         swap_permutations_list = SwapNeighborhoodGenerator((p1, p2, p3)).generator()
@@ -45,28 +57,17 @@ class Relocation:
                 break
 
         route_pair = TSP(joint_pair_list).search()
+        self.__color_cross_edge(module_list)
         graph = self.__to_graph(module_list)
         RipAndReroute(graph, module_list, route_pair).search()
-
-        # module_list, joint_pair_list = ModuleListFactory(graph, "primal").create()
-        # route_pair = TSP(joint_pair_list).search()
-        # graph = self.__to_graph(module_list)
-        # RipAndReroute(graph, module_list, route_pair).search()
-        #
-        # module_list, joint_pair_list = ModuleListFactory(graph, "dual").create()
-        # route_pair = TSP(joint_pair_list).search()
-        # graph = self.__to_graph(module_list)
-        # RipAndReroute(graph, module_list, route_pair).search()
 
         return graph
 
     @staticmethod
     def __is_validate(module_list):
         used_node = {}
-        print("module_list len: {}".format(len(module_list)))
         for module_ in module_list:
             for edge in module_.edge_list + module_.cross_edge_list:
-                # edge.debug()
                 node1, node2 = edge.node1, edge.node2
                 if node1 in used_node:
                     if edge.id != used_node[node1]:
@@ -78,11 +79,6 @@ class Relocation:
                     used_node[node1] = edge.id
                 if node2 not in used_node:
                     used_node[node2] = edge.id
-
-        # for key, value in used_node.items():
-        #     print("--")
-        #     key.debug()
-        #     print("id: {}".format(value))
 
         return True
 
