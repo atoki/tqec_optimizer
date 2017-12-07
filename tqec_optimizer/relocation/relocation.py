@@ -41,14 +41,50 @@ class Relocation:
             print("-- {} --".format(step))
             place.set_permutation(permutations)
             module_list = place.recalculate_coordinate()
-            if step == 3:
+            if self.__is_validate(module_list):
                 break
 
         route_pair = TSP(joint_pair_list).search()
         graph = self.__to_graph(module_list)
         RipAndReroute(graph, module_list, route_pair).search()
 
+        # module_list, joint_pair_list = ModuleListFactory(graph, "primal").create()
+        # route_pair = TSP(joint_pair_list).search()
+        # graph = self.__to_graph(module_list)
+        # RipAndReroute(graph, module_list, route_pair).search()
+        #
+        # module_list, joint_pair_list = ModuleListFactory(graph, "dual").create()
+        # route_pair = TSP(joint_pair_list).search()
+        # graph = self.__to_graph(module_list)
+        # RipAndReroute(graph, module_list, route_pair).search()
+
         return graph
+
+    @staticmethod
+    def __is_validate(module_list):
+        used_node = {}
+        print("module_list len: {}".format(len(module_list)))
+        for module_ in module_list:
+            for edge in module_.edge_list + module_.cross_edge_list:
+                # edge.debug()
+                node1, node2 = edge.node1, edge.node2
+                if node1 in used_node:
+                    if edge.id != used_node[node1]:
+                            return False
+                if node2 in used_node:
+                    if edge.id != used_node[node2]:
+                        return False
+                if node1 not in used_node:
+                    used_node[node1] = edge.id
+                if node2 not in used_node:
+                    used_node[node2] = edge.id
+
+        # for key, value in used_node.items():
+        #     print("--")
+        #     key.debug()
+        #     print("id: {}".format(value))
+
+        return True
 
     def __to_graph(self, module_list):
         """
@@ -117,15 +153,15 @@ class Relocation:
                 edge.node1.set_color(color)
                 edge.node2.set_color(color)
 
-    def __color_jont(self, joint_pair_list):
+    def __color_route_pair(self, route_pair_list):
         """
         モジュールに色付けをして可視化する
         """
-        for joint_pair in joint_pair_list:
-            id_ = joint_pair[0].id
+        for key, value in route_pair_list.items():
+            id_ = key.id
             color = self.__create_random_color(id_)
-            joint_pair[0].set_color(color)
-            joint_pair[1].set_color(color)
+            key.set_color(color)
+            value.set_color(color)
 
     @staticmethod
     def __create_random_color(loop_id):
