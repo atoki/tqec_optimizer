@@ -1,10 +1,9 @@
 import copy
+from collections import defaultdict
 
 from .module_list_factory import ModuleListFactory
 from .sequence_triple import SequenceTriple
-from .neighborhood_generator import SwapNeighborhoodGenerator
-
-from .neighborhood_generator import ShiftNeighborhoodGenerator
+from .neighborhood_generator import SwapNeighborhoodGenerator, ShiftNeighborhoodGenerator
 from .tsp import TSP
 from .rip_and_reroute import RipAndReroute
 from .tqec_evaluator import TqecEvaluator
@@ -23,7 +22,13 @@ class Relocation:
         self._graph = graph
         self._module_list = []
         self._joint_pair_list = []
+        self._injector_list = defaultdict(list)
         self._var_node_count = 0
+
+        # イジェクター(Pin, Cap)の情報を抜き出す
+        for edge in self._graph.edge_list:
+            if edge.is_injector():
+                self._injector_list[edge.id].append(edge.category)
 
     def execute(self):
         """
@@ -108,6 +113,7 @@ class Relocation:
                 CircuitWriter(graph).write(file_name)
             loop_count += 1
 
+        self.__add_injector(graph)
         return graph
 
     @staticmethod
@@ -154,6 +160,23 @@ class Relocation:
                     added_node[edge.node2] = node2
 
         return graph
+
+    def __add_injector(self, graph):
+        """
+        インジェクターの情報を復元する
+
+        :param graph グラフ
+        """
+        for id_, category_list in self._injector_list.items():
+            for category in category_list:
+                candidate_edge = graph.edge_list[0]
+                for edge in graph.edge_list:
+                    if edge.id == id_ and not edge.is_injector():
+                        if edge.z > candidate_edge.z:
+                            candidate_edge = edge
+                        if edge.z == candidate_edge.z and edge.x < candidate_edge.x:
+                            candidate_edge = edge
+                candidate_edge.set_category(category)
 
     @staticmethod
     def __new__node(node):
