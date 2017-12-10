@@ -1,4 +1,5 @@
 import math
+import copy
 
 from .module import Module
 from .module_list_factory import ModuleListFactory
@@ -8,10 +9,12 @@ from  .neighborhood_generator import SwapNeighborhoodGenerator
 from  .neighborhood_generator import ShiftNeighborhoodGenerator
 from .tsp import TSP
 from .rip_and_reroute import RipAndReroute
+from .tqec_evaluator import TqecEvaluator
 
 from ..graph import Graph
 from ..node import Node
 from ..edge import Edge
+from ..circuit_writer import CircuitWriter
 
 
 class Relocation:
@@ -31,35 +34,80 @@ class Relocation:
         3.再配置したモジュールの再接続を行う
         4.コストが減少しなくなるまで 2.3 を繰り返す
         """
-        # init dual module
+
+        """
+        最初にモジュール化と再接続による最適化を行う
+        """
         module_list, joint_pair_list = ModuleListFactory(self._graph, "dual").create()
         route_pair = TSP(joint_pair_list).search()
         graph = self.__to_graph(module_list)
         RipAndReroute(graph, module_list, route_pair).search()
 
-        # init primal module
-        module_list, joint_pair_list = ModuleListFactory(graph, "primal").create()
-        route_pair = TSP(joint_pair_list).search()
-        graph = self.__to_graph(module_list)
-        RipAndReroute(graph, module_list, route_pair).search()
+        cost, loop_count = len(graph.node_list), 0
+        primal_reduction, dual_reduction = True, True
+        while primal_reduction or dual_reduction:
+            type_ = "primal" if loop_count % 2 == 0 else "dual"
+            if type_ == "dual":
+                dual_reduction = False
+            else:
+                primal_reduction = False
+            module_list, joint_pair_list = ModuleListFactory(graph, type_).create()
+            route_pair = TSP(joint_pair_list).search()
+            graph = self.__to_graph(module_list)
+            RipAndReroute(graph, module_list, route_pair).search()
+            if cost > len(graph.node_list):
+                if type_ == "dual":
+                    dual_reduction = True
+                else:
+                    primal_reduction = True
+            cost = len(graph.node_list)
+            loop_count += 1
 
-        module_list, joint_pair_list = ModuleListFactory(graph, "dual").create()
-        place = SequenceTriple("dual", module_list, (6, 6, 20))
-        p1, p2, p3 = place.build_permutation()
-        swap_permutations_list = SwapNeighborhoodGenerator((p1, p2, p3)).generator()
-        shift_permutations_list = ShiftNeighborhoodGenerator((p1, p2, p3)).generator()
+        CircuitWriter(graph).write("3-reduction.json")
 
-        for step, permutations in enumerate(swap_permutations_list + shift_permutations_list):
-            print("-- {} --".format(step))
-            place.set_permutation(permutations)
-            module_list = place.recalculate_coordinate()
-            if self.__is_validate(module_list):
-                break
+        """
+        Sequence-Tripleを用いた局所探索法による再配置を行う
+        """
+        primal_reduction, dual_reduction = True, True
+        loop_count = 0
+        while primal_reduction or dual_reduction:
+            type_ = "dual" if loop_count % 2 == 0 else "primal"
+            if loop_count > 1:
+                if type_ == "dual":
+                    dual_reduction = False
+                else:
+                    primal_reduction = False
+            reduction = True
+            while reduction:
+                reduction = False
+                module_list, joint_pair_list = ModuleListFactory(graph, type_).create()
+                cost = TqecEvaluator(module_list).evaluate()
+                place = SequenceTriple(type_, module_list)
+                p1, p2, p3 = place.build_permutation()
+                swap_permutations_list = SwapNeighborhoodGenerator((p1, p2, p3)).generator()
+                shift_permutations_list = ShiftNeighborhoodGenerator((p1, p2, p3)).generator()
 
-        route_pair = TSP(joint_pair_list).search()
-        self.__color_cross_edge(module_list)
-        graph = self.__to_graph(module_list)
-        RipAndReroute(graph, module_list, route_pair).search()
+                result_module_list = copy.deepcopy(module_list)
+                result_joint_pair = copy.deepcopy(joint_pair_list)
+                for step, permutations in enumerate(swap_permutations_list + shift_permutations_list):
+                    relocation_module = SequenceTriple(type_, permutations[0], permutations).recalculate_coordinate()
+                    if self.__is_validate(relocation_module):
+                        current_cost = TqecEvaluator(relocation_module).evaluate()
+                        if cost > current_cost:
+                            reduction = True
+                            if type_ == "dual":
+                                dual_reduction = True
+                            if type_ == "primal":
+                                primal_reduction = True
+                            cost = current_cost
+                            result_module_list = copy.deepcopy(relocation_module)
+                            result_joint_pair = copy.deepcopy(joint_pair_list)
+                route_pair = TSP(result_joint_pair).search()
+                graph = self.__to_graph(result_module_list)
+                RipAndReroute(graph, result_module_list, route_pair).search()
+                file_name = str(4 + loop_count) + "-relocation.json"
+                CircuitWriter(graph).write(file_name)
+            loop_count += 1
 
         return graph
 
@@ -71,7 +119,7 @@ class Relocation:
                 node1, node2 = edge.node1, edge.node2
                 if node1 in used_node:
                     if edge.id != used_node[node1]:
-                            return False
+                        return False
                 if node2 in used_node:
                     if edge.id != used_node[node2]:
                         return False
@@ -96,9 +144,9 @@ class Relocation:
                 color = edge.color
                 node1 = added_node[edge.node1] if edge.node1 in added_node else edge.node1
                 node2 = added_node[edge.node2] if edge.node2 in added_node else edge.node2
-                edge = self.__new__edge(node1, node2, edge.category, edge.id)
-                edge.set_color(color)
-                graph.add_edge(edge)
+                new_edge = self.__new__edge(node1, node2, edge.category, edge.id)
+                new_edge.set_color(color)
+                graph.add_edge(new_edge)
                 if edge.node1 not in added_node:
                     graph.add_node(node1)
                     added_node[edge.node1] = node1
@@ -107,6 +155,12 @@ class Relocation:
                     added_node[edge.node2] = node2
 
         return graph
+
+    @staticmethod
+    def __new__node(node):
+        node = Node(node.x, node.y, node.z, node.id, node.type)
+
+        return node
 
     @staticmethod
     def __new__edge(node1, node2, category, id_=0):

@@ -4,15 +4,12 @@ from ..position import Position
 
 
 class SequenceTriple:
-    def __init__(self, type_, module_list, size):
+    def __init__(self, type_, module_list, permutations=None):
         self._type_ = type_
         self._module_list = module_list
-        self._permutation1 = []
-        self._permutation2 = []
-        self._permutation3 = []
-        self._width = size[0]
-        self._height = size[1]
-        self._depth = size[2]
+        self._permutation1 = [] if permutations is None else permutations[0]
+        self._permutation2 = [] if permutations is None else permutations[1]
+        self._permutation3 = [] if permutations is None else permutations[2]
         self._placed = [False for no in range(0, 100)]
 
     def build_permutation(self):
@@ -35,12 +32,6 @@ class SequenceTriple:
         self._permutation1.sort(key=lambda m: m.pos.y, reverse=True)
 
         return self._permutation1, self._permutation2, self._permutation3
-
-    def set_permutation(self, permutations):
-        self._placed = [False for no in range(0, 100)]
-        self._permutation1 = permutations[0]
-        self._permutation2 = permutations[1]
-        self._permutation3 = permutations[2]
 
     def recalculate_coordinate(self):
         for module_ in self._permutation3:

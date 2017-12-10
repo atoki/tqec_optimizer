@@ -20,9 +20,11 @@ class BestFirstSearch:
         # keyは探索済みノード. valueはその前のノード
         visited_node = {first: Node(0, 0, 0)}
         heapq.heappush(queue, (0, first))
+        solve = False
         while len(queue) != 0:
             current_node_cost, current_node = heapq.heappop(queue)
             if self.__is_dst_node(current_node):
+                solve = True
                 break
 
             for next_node in self.__expand_node(current_node):
@@ -32,10 +34,11 @@ class BestFirstSearch:
 
         route = []
         node = last
-        while not self.__is_src_node(node):
+        if solve:
+            while not self.__is_src_node(node):
+                route.insert(0, node)
+                node = visited_node[node]
             route.insert(0, node)
-            node = visited_node[node]
-        route.insert(0, node)
 
         return route
 

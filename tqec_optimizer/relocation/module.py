@@ -97,11 +97,10 @@ class Module:
             diff_y = position.y - self._pos.y
             diff_z = position.z - self._pos.z
 
-            move_node_list = []
+            move_node_list = set()
             for edge in self._edge_list + self._cross_edge_list:
-                move_node_list.append(edge.node1)
-                move_node_list.append(edge.node2)
-            move_node_list = list(set(move_node_list))
+                move_node_list.add(edge.node1)
+                move_node_list.add(edge.node2)
 
             for node in move_node_list:
                 node.move(diff_x, diff_y, diff_z)

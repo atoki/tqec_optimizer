@@ -25,9 +25,10 @@ class RipAndReroute:
 
     def search(self):
         for src, dst in self._route_pair.items():
-            bfs = BestFirstSearch(src, dst, self._used_node_array, self._invalid_edge, self._size, self._space)
+            graph_src, graph_dst = self.__src(src), self.__src(dst)
+            bfs = BestFirstSearch(graph_src, graph_dst, self._used_node_array, self._invalid_edge, self._size, self._space)
             route = bfs.search()
-            self.__create_route(src, dst, route)
+            self.__create_route(graph_src, graph_dst, route)
 
     def __create_route(self, src, dst, route):
         """
@@ -90,6 +91,16 @@ class RipAndReroute:
     def __new_node_variable(self):
         self._var_node_count += 1
         return self._var_node_count
+
+    def __src(self, src):
+        for node in self._graph.node_list:
+            if src.x == node.x and src.y == node.y and src.z == node.z:
+                return node
+
+    def __dst(self, dst):
+        for node in self._graph.node_list:
+            if dst.x == node.x and dst.y == node.y and dst.z == node.z:
+                return node
 
     def __new_node(self, type_, x, y, z):
         node = Node(x, y, z, self.__new_node_variable(), type_)

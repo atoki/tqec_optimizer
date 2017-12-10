@@ -10,6 +10,7 @@ from tqec_optimizer.circuit_writer import CircuitWriter
 
 from tqec_optimizer.transformation.transformation import Transformation
 from tqec_optimizer.relocation.relocation import Relocation
+from tqec_optimizer.relocation.tqec_evaluator import TqecEvaluator
 
 
 def usage():
@@ -39,17 +40,21 @@ def main():
             output_file = a
 
     if output_file is None:
-        output_file = "sample.json"
+        output_file = "result.json"
 
     # preparation
     circuit = CircuitReader().read_circuit(input_file)
     graph = Graph(circuit)
+    CircuitWriter(graph).write("1-init.json")
+    print("first cost: {}".format(len(graph.node_list)))
 
     # optimization of non topology
     Transformation(graph).execute()
+    CircuitWriter(graph).write("2-transform.json")
 
     # optimization of topology
     graph = Relocation(graph).execute()
+    print("result cost: {}".format(len(graph.node_list)))
 
     # output
     CircuitWriter(graph).write(output_file)

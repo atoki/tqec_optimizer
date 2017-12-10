@@ -50,7 +50,12 @@ class TSP:
 
     def __create_end_map(self):
         for end_pair in self._joint_pair_list:
-            if end_pair[0] in self._end_map:
+            if end_pair[0] in self._end_map and end_pair[1] in self._end_map:
+                self._end_map[self._end_map[end_pair[0]]] = self._end_map[end_pair[1]]
+                self._end_map[self._end_map[end_pair[1]]] = self._end_map[end_pair[0]]
+                del self._end_map[end_pair[0]]
+                del self._end_map[end_pair[1]]
+            elif end_pair[0] in self._end_map:
                 self._end_map[end_pair[1]] = self._end_map[end_pair[0]]
                 self._end_map[self._end_map[end_pair[0]]] = end_pair[1]
                 del self._end_map[end_pair[0]]
