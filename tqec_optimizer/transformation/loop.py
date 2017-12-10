@@ -1,3 +1,8 @@
+import math
+
+from ..position import Position
+
+
 class Loop:
     """
     ループクラス
@@ -9,6 +14,10 @@ class Loop:
         :param loop_id モジュールを構成する閉路の番号
         """
         self._id = loop_id
+        self._pos = Position()
+        self._width = 0
+        self._height = 0
+        self._depth = 0
         self._edge_list = []
         self._cross_list = []
         self._injector_list = []
@@ -16,6 +25,26 @@ class Loop:
     @property
     def id(self):
         return self._id
+
+    @property
+    def type(self):
+        return self._edge_list[0].node1.type
+
+    @property
+    def pos(self):
+        return self._pos
+
+    @property
+    def width(self):
+        return self._width
+
+    @property
+    def height(self):
+        return self._height
+
+    @property
+    def depth(self):
+        return self._depth
 
     @property
     def edge_list(self):
@@ -68,8 +97,37 @@ class Loop:
         candidate_edge.set_category(category)
         self._injector_list.append(candidate_edge)
 
+    def update(self):
+        """
+        モジュールのサイズを求めて設定する
+        """
+        min_x = min_y = min_z = math.inf
+        max_x = max_y = max_z = -math.inf
+        # (x,y,z)が最小となる座標(pos)とモジュールの大きさを計算する
+        for edge in self._edge_list:
+            for n in range(0, 2):
+                node = edge.node1 if n == 1 else edge.node2
+
+                # モジュールの最小、最大値を更新する
+                min_x = min(node.x, min_x)
+                min_y = min(node.y, min_y)
+                min_z = min(node.z, min_z)
+                max_x = max(node.x, max_x)
+                max_y = max(node.y, max_y)
+                max_z = max(node.z, max_z)
+
+        self._pos.set(min_x, min_y, min_z)
+        self._width = max_x - min_x
+        self._height = max_y - min_y
+        self._depth = max_z - min_z
+
     def debug(self):
         print("-----  loop id: {} -----".format(self._id))
+        print("type          = {}".format(self._edge_list[0].node1.type))
         print("edge list     = {}".format(len(self._edge_list)))
         print("cross list    = {}".format(len(self._cross_list)))
         print("injector list = {}".format(len(self._injector_list)))
+        print("position : (", self._pos.x, ",", self._pos.y, ",", self._pos.z, ")")
+        print("width : ", self._width)
+        print("height: ", self._height)
+        print("depth : ", self._depth)

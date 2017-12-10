@@ -10,7 +10,6 @@ from tqec_optimizer.circuit_writer import CircuitWriter
 
 from tqec_optimizer.transformation.transformation import Transformation
 from tqec_optimizer.relocation.relocation import Relocation
-from tqec_optimizer.relocation.tqec_evaluator import TqecEvaluator
 
 
 def usage():

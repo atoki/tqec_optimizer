@@ -1,12 +1,10 @@
-import math
 import copy
 
-from .module import Module
 from .module_list_factory import ModuleListFactory
 from .sequence_triple import SequenceTriple
-from  .neighborhood_generator import SwapNeighborhoodGenerator
+from .neighborhood_generator import SwapNeighborhoodGenerator
 
-from  .neighborhood_generator import ShiftNeighborhoodGenerator
+from .neighborhood_generator import ShiftNeighborhoodGenerator
 from .tsp import TSP
 from .rip_and_reroute import RipAndReroute
 from .tqec_evaluator import TqecEvaluator
@@ -38,6 +36,7 @@ class Relocation:
         """
         最初にモジュール化と再接続による最適化を行う
         """
+        # TODO: モジュールの交差辺が他のモジュールの交差辺と同一だった場合を考慮
         module_list, joint_pair_list = ModuleListFactory(self._graph, "dual").create()
         route_pair = TSP(joint_pair_list).search()
         graph = self.__to_graph(module_list)

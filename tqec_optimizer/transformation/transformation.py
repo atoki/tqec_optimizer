@@ -27,24 +27,35 @@ class Transformation:
             max_z = max(max_z, node.z)
 
         self._size = (max_x + self._space, max_y + self._space, max_z + self._space)
+        """
+        primal(dual)_used_node_array
+        0: ノードが存在しないことを示す
+        1: 実際にノードが存在することを示す
+        2: loopの領域で侵入不可なノード(座標)を示す
+        """
+        self._primal_used_node_array = [[[0
+                                          for z in range(0, int(max_z + self._space * 2) + 1)]
+                                         for y in range(0, int(max_y + self._space * 2) + 1)]
+                                        for x in range(0, int(max_x + self._space * 2) + 1)]
 
-        self._used_node_array = [[[False
-                                   for z in range(0, int(max_z + self._space * 2) + 1)]
-                                  for y in range(0, int(max_y + self._space * 2) + 1)]
-                                 for x in range(0, int(max_x + self._space * 2) + 1)]
+        self._dual_used_node_array = [[[0
+                                        for z in range(0, int(max_z + self._space * 2) + 1)]
+                                       for y in range(0, int(max_y + self._space * 2) + 1)]
+                                      for x in range(0, int(max_x + self._space * 2) + 1)]
 
         for node in self._graph.node_list:
-            self._used_node_array[node.x + self._space][node.y + self._space][node.z + self._space] = True
+            self._primal_used_node_array[node.x + self._space][node.y + self._space][node.z + self._space] = 1
+            self._dual_used_node_array[node.x + self._space][node.y + self._space][node.z + self._space] = 1
 
-    def execute(self):
         # 閉じていない辺を削除
         self.__delete_loop(0)
         self.__create_loop()
-        # self.__color_loop()
+        self.__create_used_node_array(max_x, max_y, max_z)
 
+    def execute(self):
         reduction = True
         no = 1
-        print("-- rule2 --")
+        print("-- rule1 --")
         while reduction:
             print("-step{}".format(no))
             for loop in self._loop_list:
@@ -55,7 +66,7 @@ class Transformation:
 
         reduction = True
         no = 1
-        print("-- rule1 --")
+        print("-- rule2 --")
         while reduction:
             print("-step{}".format(no))
             for loop in self._loop_list:
@@ -63,8 +74,6 @@ class Transformation:
                 if reduction:
                     no += 1
                     break
-
-        # self.__color_loop()
 
     def __create_loop(self):
         """
@@ -85,6 +94,7 @@ class Transformation:
                         loop.add_cross(cross_edge.id)
 
             if len(loop.edge_list) > 0:
+                loop.update()
                 self._loop_list.append(loop)
 
     def __rule1(self, loop):
@@ -98,6 +108,7 @@ class Transformation:
         cross_loop.shift_injector(loop.injector_list[0].category)
         cross_loop.remove_cross(loop.id)
         self.__delete_loop(loop.id)
+        self.__remove_loop_obstacle(loop)
 
         return True
 
@@ -113,10 +124,8 @@ class Transformation:
             for cross_edge in edge.cross_edge_list:
                 cross_edge_list.append(cross_edge)
 
-        node1 = cross_edge_list[0].node1
-        node2 = cross_edge_list[0].node2
-        node3 = cross_edge_list[1].node1
-        node4 = cross_edge_list[1].node2
+        node1, node2 = cross_edge_list[0].node1, cross_edge_list[0].node2
+        node3, node4 = cross_edge_list[1].node1, cross_edge_list[1].node2
 
         # ループを削除する
         cross_loop_list = []
@@ -125,6 +134,7 @@ class Transformation:
             cross_loop.remove_cross(loop.id)
             cross_loop_list.append(cross_loop)
         self.__delete_loop(loop.id)
+        self.__remove_loop_obstacle(loop)
 
         # ループに交差した辺を全て削除する
         for del_edge in cross_edge_list:
@@ -132,8 +142,6 @@ class Transformation:
 
         # 2つのループを結合する
         self.__connect_loop(cross_loop_list[0], cross_loop_list[1])
-
-        # self.__color_node()
 
         # ループを1つにするためにノードをつなげる
         self.__connect_node(cross_loop_list[0], node1, node3)
@@ -172,7 +180,8 @@ class Transformation:
         :param start 接続元ノード
         :param end 接続先ノード
         """
-        route = BestFirstSearch(start, end, self._used_node_array, self._size, self._space).search()
+        obstacle_node_array = self._primal_used_node_array if start.type == "dual" else self._dual_used_node_array
+        route = BestFirstSearch(start, end, obstacle_node_array, self._size, self._space).search()
         self.__create_route(loop, start, end, route)
 
     def __create_route(self, loop, start, end, route):
@@ -237,8 +246,10 @@ class Transformation:
                 non_loop_node_index.append(self._graph.node_list.index(node1))
                 non_loop_node_index.append(self._graph.node_list.index(node2))
                 if not only_loop:
-                    self._used_node_array[node1.x + self._space][node1.y + self._space][node1.z + self._space] = False
-                    self._used_node_array[node2.x + self._space][node2.y + self._space][node2.z + self._space] = False
+                    self._primal_used_node_array[node1.x + self._space][node1.y + self._space][node1.z + self._space] = 0
+                    self._dual_used_node_array[node1.x + self._space][node1.y + self._space][node1.z + self._space] = 0
+                    self._primal_used_node_array[node2.x + self._space][node2.y + self._space][node2.z + self._space] = 0
+                    self._dual_used_node_array[node2.x + self._space][node2.y + self._space][node2.z + self._space] = 0
 
         non_loop_edge_index.reverse()
         # 重複した要素を取り除く
@@ -259,6 +270,47 @@ class Transformation:
         if loop_id > 0:
             loop_index = self._loop_list.index(self.__loop(loop_id))
             del self._loop_list[loop_index]
+
+    def __create_used_node_array(self, max_x, max_y, max_z):
+        """
+        経路として利用できないノードリストを作成する
+
+        :param max_x　X軸方向の最大サイズ
+        :param max_y　Y軸方向の最大サイズ
+        :param max_z　Z軸方向の最大サイズ
+        """
+        for loop in self._loop_list:
+            min_x, max_x = loop.pos.x, loop.pos.x + loop.width
+            min_y, max_y = loop.pos.y, loop.pos.y + loop.height
+            min_z, max_z = loop.pos.z, loop.pos.z + loop.depth
+            for x in range(min_x, max_x + 1):
+                for y in range(min_y, max_y + 1):
+                    for z in range(min_z, max_z + 1):
+                        if loop.type == "primal" \
+                                and self._primal_used_node_array[x + self._space][y + self._space][z + self._space] == 0:
+                            self._primal_used_node_array[x + self._space][y + self._space][z + self._space] = 2
+                        if loop.type == "dual" \
+                                and self._dual_used_node_array[x + self._space][y + self._space][z + self._space] == 0:
+                            self._dual_used_node_array[x + self._space][y + self._space][z + self._space] = 2
+
+    def __remove_loop_obstacle(self, loop):
+        """
+        loopが占領する領域を開放する
+
+        :param loop ループ
+        """
+        min_x, max_x = loop.pos.x, loop.pos.x + loop.width
+        min_y, max_y = loop.pos.y, loop.pos.y + loop.height
+        min_z, max_z = loop.pos.z, loop.pos.z + loop.depth
+        for x in range(min_x, max_x + 1):
+            for y in range(min_y, max_y + 1):
+                for z in range(min_z, max_z + 1):
+                    if loop.type == "primal" \
+                            and self._primal_used_node_array[x + self._space][y + self._space][z + self._space] == 2:
+                        self._primal_used_node_array[x + self._space][y + self._space][z + self._space] = 0
+                    if loop.type == "dual" \
+                            and self._dual_used_node_array[x + self._space][y + self._space][z + self._space] == 2:
+                        self._dual_used_node_array[x + self._space][y + self._space][z + self._space] = 0
 
     def __new_node_variable(self):
         self._var_node_count += 1
@@ -283,7 +335,8 @@ class Transformation:
 
     def __new_node(self, type_, x, y, z):
         node = Node(x, y, z, self.__new_node_variable(), type_)
-        self._used_node_array[x + self._space][y + self._space][z + self._space] = True
+        self._primal_used_node_array[x + self._space][y + self._space][z + self._space] = 1
+        self._dual_used_node_array[x + self._space][y + self._space][z + self._space] = 1
         self._graph.add_node(node)
 
         return node
