@@ -11,7 +11,7 @@ class ModuleListFactory:
         self._type = type_
         self._graph = graph
         self._module_list = []
-        # (端1, 端2, ループ番号)
+        # (端1, 端2, 端1と端2を繋ぐ辺)
         self._joint_pair_list = []
 
     def create(self):
@@ -56,7 +56,7 @@ class ModuleListFactory:
                     else self.__new_joint(edge.node2, edge.id)
                 cross_edge = self.__new__edge(joint1, joint2, "edge", edge.id)
                 module_.add_cross_edge(cross_edge)
-                self._joint_pair_list.append((joint1, joint2))
+                self._joint_pair_list.append((joint1, joint2, cross_edge))
                 used_node[edge.node1] = joint1
                 used_node[edge.node2] = joint2
 

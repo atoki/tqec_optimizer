@@ -24,6 +24,11 @@ class Edge:
         return ((self._node1.x + self._node2.x) / 2, (self._node1.y + self._node2.y) / 2,
                 (self._node1.z + self._node2.z) / 2) == (other.x, other.y, other.z)
 
+    def __hash__(self):
+        return hash((int((self._node1.x + self._node2.x) / 2),
+                     int((self._node1.y + self._node2.y) / 2),
+                     int((self._node1.z + self._node2.z) / 2)))
+
     def set_id(self, id_):
         self._id = id_
 
@@ -57,15 +62,15 @@ class Edge:
 
     @property
     def x(self):
-        return (self._node1.x + self._node2.x) / 2
+        return int((self._node1.x + self._node2.x) / 2)
 
     @property
     def y(self):
-        return (self._node1.y + self._node2.y) / 2
+        return int((self._node1.y + self._node2.y) / 2)
 
     @property
     def z(self):
-        return (self._node1.z + self._node2.z) / 2
+        return int((self._node1.z + self._node2.z) / 2)
 
     @property
     def node1(self):
