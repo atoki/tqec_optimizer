@@ -9,18 +9,36 @@ class TqecEvaluator:
 
     def evaluate(self):
         point = 0
-        edge_map = defaultdict(list)
+        node_list = []
         for module_ in self._module_list:
-            for edge in module_.cross_edge_list:
-                edge_map[edge.id].append(edge)
+            for edge in module_.edge_list:
+                node_list.append(edge.node1)
+                node_list.append(edge.node2)
 
-        for id_, edge_list in edge_map.items():
-            point += self.__evaluate_module(edge_list)
+        point += self.__evaluate_convex_hull(node_list)
 
         return point
 
     @staticmethod
-    def __evaluate_module(edge_list):
+    def __evaluate_convex_hull(node_list):
+        min_x = min_y = min_z = math.inf
+        max_x = max_y = max_z = -math.inf
+        for node in node_list:
+            min_x = min(node.x, min_x)
+            min_y = min(node.y, min_y)
+            min_z = min(node.z, min_z)
+            max_x = max(node.x, max_x)
+            max_y = max(node.y, max_y)
+            max_z = max(node.z, max_z)
+
+        width = (max_x - min_x) / 2 + 1
+        height = (max_y - min_y) / 2 + 1
+        depth = (max_z - min_z) / 2 + 1
+
+        return width * height * depth
+
+    @staticmethod
+    def __evaluate_wiring_distance(edge_list):
         min_x = min_y = min_z = math.inf
         max_x = max_y = max_z = -math.inf
         for edge in edge_list:
