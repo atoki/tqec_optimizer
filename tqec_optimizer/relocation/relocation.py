@@ -50,7 +50,7 @@ class Relocation:
         """
         module_list, joint_pair_list = ModuleListFactory(graph, "primal").create()
         graph = self.__to_graph(module_list)
-        route_pair = TSP(joint_pair_list).search()
+        route_pair = TSP(graph, module_list, joint_pair_list).search()
         RipAndReroute(graph, module_list, route_pair).search()
 
         result_graph = graph
@@ -64,7 +64,7 @@ class Relocation:
                 primal_reduction = False
             module_list, joint_pair_list = ModuleListFactory(result_graph, type_).create()
             graph = self.__to_graph(module_list)
-            route_pair = TSP(joint_pair_list).search()
+            route_pair = TSP(graph, module_list, joint_pair_list).search()
             RipAndReroute(graph, module_list, route_pair).search()
             current_cost = TqecEvaluator(None, graph, True).evaluate()
             if cost > current_cost:
@@ -119,7 +119,7 @@ class Relocation:
                             result_module_list = copy.deepcopy(relocation_module)
                             result_joint_pair = copy.deepcopy(joint_pair_list)
                 graph = self.__to_graph(result_module_list)
-                route_pair = TSP(result_joint_pair).search()
+                route_pair = TSP(graph, result_module_list, result_joint_pair).search()
                 RipAndReroute(graph, result_module_list, route_pair).search()
                 file_name = str(4 + loop_count) + "-relocation.json"
                 CircuitWriter(graph).write(file_name)

@@ -5,7 +5,9 @@ from .local_search import LocalSearch
 
 
 class TSP:
-    def __init__(self, joint_pair_list):
+    def __init__(self, graph, module_list, joint_pair_list):
+        self._graph = graph
+        self._module_list = module_list
         self._joint_pair_list = joint_pair_list
         self._end_map = {}
         self._invalidate_pair = {}
@@ -25,7 +27,7 @@ class TSP:
 
         route_pair = {}
         for route_list in self._route_list.values():
-            route = LocalSearch(route_list, self._invalidate_pair).execute()
+            route = LocalSearch(self._graph, self._module_list, route_list, self._invalidate_pair).execute()
             route_pair.update(route)
 
         return route_pair
@@ -95,9 +97,3 @@ class TSP:
                 self._invalidate_pair[end_pair[0]] = end_pair[1]
                 self._invalidate_pair[end_pair[1]] = end_pair[0]
             used_pair[end_pair[2]] = True
-
-
-
-
-
-
