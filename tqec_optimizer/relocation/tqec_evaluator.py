@@ -4,20 +4,41 @@ from collections import defaultdict
 
 
 class TqecEvaluator:
-    def __init__(self, module_list):
+    def __init__(self, module_list, graph=None, is_graph=False):
         self._module_list = module_list
+        self._graph = graph
+        self._is_graph = is_graph
 
     def evaluate(self):
         point = 0
-        node_list = []
-        for module_ in self._module_list:
-            for edge in module_.edge_list:
-                node_list.append(edge.node1)
-                node_list.append(edge.node2)
+        if self._is_graph:
+            point += self.__evaluate_graph()
 
-        point += self.__evaluate_convex_hull(node_list)
+            return point
+        else:
+            node_list = []
+            for module_ in self._module_list:
+                for edge in module_.edge_list:
+                    node_list.append(edge.node1)
+                    node_list.append(edge.node2)
 
-        return point
+            point += self.__evaluate_convex_hull(node_list)
+
+            return point
+
+    def __evaluate_graph(self):
+        min_x = min_y = min_z = math.inf
+        max_x = max_y = max_z = -math.inf
+        for node in self._graph.node_list:
+            if node.type is "primal":
+                min_x, min_y, min_z = min(node.x, min_x), min(node.y, min_y), min(node.z, min_z)
+                max_x, max_y, max_z = max(node.x, max_x), max(node.y, max_y), max(node.z, max_z)
+
+        width = (max_x - min_x) / 2 + 1
+        height = (max_y - min_y) / 2 + 1
+        depth = (max_z - min_z) / 2 + 1
+
+        return width * height * depth
 
     @staticmethod
     def __evaluate_convex_hull(node_list):

@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 
 import sys
+import math
 import getopt
 
 from tqec_optimizer.circuit_reader import CircuitReader
@@ -45,7 +46,7 @@ def main():
     circuit = CircuitReader().read_circuit(input_file)
     graph = Graph(circuit)
     CircuitWriter(graph).write("1-init.json")
-    print("first cost: {}".format(len(graph.node_list)))
+    print("first cost: {}".format(evaluate(graph)))
 
     # optimization of non topology
     Transformation(graph).execute()
@@ -53,10 +54,25 @@ def main():
 
     # optimization of topology
     graph = Relocation(graph).execute()
-    print("result cost: {}".format(len(graph.node_list)))
+    print("result cost: {}".format(evaluate(graph)))
 
     # output
     CircuitWriter(graph).write(output_file)
+
+
+def evaluate(graph):
+    min_x = min_y = min_z = math.inf
+    max_x = max_y = max_z = -math.inf
+    for node in graph.node_list:
+        if node.type is "primal":
+            min_x, min_y, min_z = min(node.x, min_x), min(node.y, min_y), min(node.z, min_z)
+            max_x, max_y, max_z = max(node.x, max_x), max(node.y, max_y), max(node.z, max_z)
+
+    width = (max_x - min_x) / 2 + 1
+    height = (max_y - min_y) / 2 + 1
+    depth = (max_z - min_z) / 2 + 1
+
+    return width * height * depth
 
 
 if __name__ == '__main__':

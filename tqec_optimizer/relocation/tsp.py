@@ -1,11 +1,17 @@
+import copy
 from collections import defaultdict
+
+from .local_search import LocalSearch
 
 
 class TSP:
     def __init__(self, joint_pair_list):
         self._joint_pair_list = joint_pair_list
         self._end_map = {}
+        self._invalidate_pair = {}
+        self._route_list = defaultdict(list)
         self._route_pair = {}
+        self._result_pair = {}
 
         self.__create_end_map()
 
@@ -15,14 +21,21 @@ class TSP:
             joint_map[joint.id].append(joint)
 
         for id_, joint_list in joint_map.items():
-            self.__assign_target_node(joint_list)
+            self.__assign_target_node(id_, joint_list)
 
-        return self._route_pair
+        route_pair = {}
+        for route_list in self._route_list.values():
+            route = LocalSearch(route_list, self._invalidate_pair).execute()
+            route_pair.update(route)
 
-    def __assign_target_node(self, joint_list):
+        return route_pair
+
+    def __assign_target_node(self, id_, joint_list):
         if len(joint_list) == 2:
             joint_list[0].set_target_node(joint_list[1])
             joint_list[1].set_target_node(joint_list[0])
+            self._route_list[id_].append(joint_list[0])
+            self._route_list[id_].append(joint_list[1])
             self._route_pair[joint_list[0]] = joint_list[1]
             return
 
@@ -30,6 +43,7 @@ class TSP:
         first_joint = end_joint = current_joint
         joint_list.remove(current_joint)
         while len(joint_list) != 0:
+            self._route_list[id_].append(current_joint)
             if current_joint in self._end_map:
                 next_joint = self._end_map[current_joint]
                 del self._end_map[current_joint]
@@ -44,6 +58,7 @@ class TSP:
                 self._route_pair[current_joint] = next_joint
             end_joint = current_joint = next_joint
             joint_list.remove(current_joint)
+        self._route_list[id_].append(end_joint)
         self._route_pair[end_joint] = first_joint
 
     def __create_end_map(self):
@@ -56,17 +71,29 @@ class TSP:
                 self._end_map[self._end_map[end_pair[1]]] = self._end_map[end_pair[0]]
                 del self._end_map[end_pair[0]]
                 del self._end_map[end_pair[1]]
+                self._invalidate_pair[self._invalidate_pair[end_pair[0]]] = self._invalidate_pair[end_pair[1]]
+                self._invalidate_pair[self._invalidate_pair[end_pair[1]]] = self._invalidate_pair[end_pair[0]]
+                del self._invalidate_pair[end_pair[0]]
+                del self._invalidate_pair[end_pair[1]]
             elif end_pair[0] in self._end_map:
                 self._end_map[end_pair[1]] = self._end_map[end_pair[0]]
                 self._end_map[self._end_map[end_pair[0]]] = end_pair[1]
                 del self._end_map[end_pair[0]]
+                self._invalidate_pair[end_pair[1]] = self._invalidate_pair[end_pair[0]]
+                self._invalidate_pair[self._invalidate_pair[end_pair[0]]] = end_pair[1]
+                del self._invalidate_pair[end_pair[0]]
             elif end_pair[1] in self._end_map:
                 self._end_map[end_pair[0]] = self._end_map[end_pair[1]]
                 self._end_map[self._end_map[end_pair[1]]] = end_pair[0]
                 del self._end_map[end_pair[1]]
+                self._invalidate_pair[end_pair[0]] = self._invalidate_pair[end_pair[1]]
+                self._invalidate_pair[self._invalidate_pair[end_pair[1]]] = end_pair[0]
+                del self._invalidate_pair[end_pair[1]]
             else:
                 self._end_map[end_pair[0]] = end_pair[1]
                 self._end_map[end_pair[1]] = end_pair[0]
+                self._invalidate_pair[end_pair[0]] = end_pair[1]
+                self._invalidate_pair[end_pair[1]] = end_pair[0]
             used_pair[end_pair[2]] = True
 
 
