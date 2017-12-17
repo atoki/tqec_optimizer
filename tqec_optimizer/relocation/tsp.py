@@ -1,7 +1,7 @@
 import copy
 from collections import defaultdict
 
-from .local_search import LocalSearch
+from .sa import SA
 
 
 class TSP:
@@ -27,7 +27,7 @@ class TSP:
 
         route_pair = {}
         for route_list in self._route_list.values():
-            route = LocalSearch(self._graph, self._module_list, route_list, self._invalidate_pair).execute()
+            route = SA(self._graph, self._module_list, route_list, self._invalidate_pair).execute()
             route_pair.update(route)
 
         return route_pair
