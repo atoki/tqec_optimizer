@@ -40,7 +40,7 @@ def main():
             output_file = a
 
     if output_file is None:
-        output_file = "result.json"
+        output_file = "7-result.json"
 
     # preparation
     circuit = CircuitReader().read_circuit(input_file)
@@ -50,11 +50,12 @@ def main():
 
     # optimization of non topology
     Transformation(graph).execute()
+    print("transformation cost: {}".format(evaluate(graph)))
     CircuitWriter(graph).write("2-transform.json")
 
     # optimization of topology
     graph = Relocation(graph).execute()
-    print("result cost: {}".format(evaluate(graph)))
+    print("relocation cost: {}".format(evaluate(graph)))
 
     # output
     CircuitWriter(graph).write(output_file)

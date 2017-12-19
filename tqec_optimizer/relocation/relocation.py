@@ -10,6 +10,7 @@ from .neighborhood_generator import SwapNeighborhoodGenerator, ShiftNeighborhood
 from .tsp import TSP
 from .rip_and_reroute import RipAndReroute
 from .tqec_evaluator import TqecEvaluator
+from .compaction import Compaction
 
 from ..graph import Graph
 from ..node import Node
@@ -38,10 +39,27 @@ class Relocation:
     def execute(self):
         """
         1.モジュール化と再接続による最適化を行う
-        2.Sequence-Tripleを用いた局所探索法による再配置を行う
+        2.回路内の空白の圧縮を行う
+        3.Sequence-Tripleを用いた局所探索法による再配置を行う
         """
+        # reduction
         graph = self.__reduction(self._graph)
-        graph = self.__relocation(graph)
+        point = TqecEvaluator(None, graph, True).evaluate()
+        print("reduction cost: {}".format(point))
+        CircuitWriter(graph).write("3-reduction.json")
+
+        # compaction
+        graph = Compaction(graph).execute()
+        point = TqecEvaluator(None, graph, True).evaluate()
+        print("compaction cost: {}".format(point))
+        CircuitWriter(graph).write("4-compaction.json")
+
+        # reduction
+        graph = self.__sa_relocation("dual", graph)
+        point = TqecEvaluator(None, graph, True).evaluate()
+        print("dual relocation cost: {}".format(point))
+        CircuitWriter(graph).write("5-relocation.json")
+
         self.__add_injector(graph)
 
         return graph
@@ -77,8 +95,6 @@ class Relocation:
                 result_graph = graph
                 cost = current_cost
             loop_count += 1
-
-        CircuitWriter(graph).write("3-reduction.json")
 
         return result_graph
 
