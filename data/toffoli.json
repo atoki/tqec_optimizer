@@ -1,0 +1,65 @@
+{
+  "bits"   : [0, 1, 2],
+  "inputs": [0, 1, 2],
+  "outputs": [0, 1, 2],
+  "operations": [
+    {
+      "type": "cnot",
+      "control": 1,
+      "targets" : [2]
+    },
+    {
+      "type": "t",
+      "target": 2
+    },
+    {
+      "type": "cnot",
+      "control": 0,
+      "targets" : [2]
+    },
+    {
+      "type": "t",
+      "target": 2
+    },
+    {
+      "type": "cnot",
+      "control": 1,
+      "targets" : [2]
+    },
+    {
+      "type": "t",
+      "target": 2
+    },
+    {
+      "type": "cnot",
+      "control": 0,
+      "targets" : [2]
+    },
+    {
+      "type": "t",
+      "target": 1
+    },
+    {
+      "type": "t",
+      "target": 2
+    },
+    {
+      "type": "cnot",
+      "control": 0,
+      "targets" : [1]
+    },
+    {
+      "type": "t",
+      "target": 1
+    },
+    {
+      "type": "t",
+      "target": 0
+    },
+    {
+      "type": "s",
+      "target": 1
+    }
+  ]
+}
+
