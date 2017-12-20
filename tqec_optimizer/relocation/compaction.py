@@ -1,3 +1,5 @@
+import math
+
 from .module_list_factory import ModuleListFactory
 from .tsp import TSP
 from .rip_and_reroute import RipAndReroute
@@ -21,18 +23,23 @@ class Compaction:
         module_list, joint_pair_list = ModuleListFactory(graph, "primal").create()
         module_list.sort(key=lambda m: (m.pos.x, m.pos.z))
 
-        x = 0
-        width = module_list[0].width
-        pre_x = module_list[0].pos.x
+        x, width, pre_x = 0, 0, -math.inf
         for module_ in module_list:
             if pre_x == module_.pos.x:
+                x -= width
                 module_.set_position(Position(x, module_.pos.y, module_.pos.z), True)
-                width = max(width, module_.width)
-            else:
                 x += width
-                width = module_.width
+                if module_.width > width:
+                    x += module_.width - width
+                    width = module_.width
+            else:
                 pre_x = module_.pos.x
-                module_.set_position(Position(x, module_.pos.y, module_.pos.z), True)
+                if x <= module_.pos.x:
+                    module_.set_position(Position(x, module_.pos.y, module_.pos.z), True)
+                    width = module_.width
+                    x += width
+                else:
+                    x = max(x, module_.pos.x + module_.width)
 
         graph = self.__to_graph(module_list)
         route_pair = TSP(graph, module_list, joint_pair_list).search()
@@ -44,18 +51,23 @@ class Compaction:
         module_list, joint_pair_list = ModuleListFactory(graph, "dual").create()
         module_list.sort(key=lambda m: (m.pos.z, m.pos.x))
 
-        z = 0
-        depth = module_list[0].depth
-        pre_z = module_list[0].pos.z
+        z, depth, pre_z = 0, 0, -math.inf
         for module_ in module_list:
             if pre_z == module_.pos.z:
+                z -= depth
                 module_.set_position(Position(module_.pos.x, module_.pos.y, z), True)
-                depth = max(depth, module_.depth)
-            else:
                 z += depth
-                depth = module_.depth
+                if module_.depth > depth:
+                    z += module_.depth - depth
+                    depth = module_.depth
+            else:
                 pre_z = module_.pos.z
-                module_.set_position(Position(module_.pos.x, module_.pos.y, z), True)
+                if z <= module_.pos.z:
+                    module_.set_position(Position(module_.pos.x, module_.pos.y, z), True)
+                    depth = module_.depth
+                    z += depth
+                else:
+                    z = max(z, module_.pos.z + module_.depth)
 
         graph = self.__to_graph(module_list)
         route_pair = TSP(graph, module_list, joint_pair_list).search()
