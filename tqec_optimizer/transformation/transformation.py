@@ -129,11 +129,12 @@ class Transformation:
 
         # ループを削除する
         cross_loop_list = []
+        delete_loop_id = loop.id
         for cross_loop_id in loop.cross_list:
             cross_loop = self.__loop(cross_loop_id)
-            cross_loop.remove_cross(loop.id)
+            cross_loop.remove_cross(delete_loop_id)
             cross_loop_list.append(cross_loop)
-        self.__delete_loop(loop.id)
+        self.__delete_loop(delete_loop_id)
         self.__remove_loop_obstacle(loop)
 
         # ループに交差した辺を全て削除する
@@ -160,11 +161,16 @@ class Transformation:
         :param loop2 吸収される側のループ
         """
         for edge in loop2.edge_list:
-            loop1.add_edge(edge)
             edge.set_id(loop1.id)
+            loop1.add_edge(edge)
 
         for cross_id in loop2.cross_list:
+            # loop1にloop2が交差していたloop idを追加する
             loop1.add_cross(cross_id)
+            # loop2に交差していたloopのloop2.idをloop1.idに変更する
+            loop = self.__loop(cross_id)
+            loop.remove_cross(loop2.id)
+            loop.add_cross(loop1.id)
 
         for injector in loop2.injector_list:
             loop1.add_injector(injector)
