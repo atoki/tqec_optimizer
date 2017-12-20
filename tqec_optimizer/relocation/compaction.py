@@ -23,7 +23,7 @@ class Compaction:
         module_list, joint_pair_list = ModuleListFactory(graph, "primal").create()
         module_list.sort(key=lambda m: (m.pos.x, m.pos.z))
 
-        x, width, pre_x = 0, 0, -math.inf
+        x, width, pre_x = -1, 0, -math.inf
         for module_ in module_list:
             if pre_x == module_.pos.x:
                 x -= width
