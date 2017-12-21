@@ -14,6 +14,7 @@ class Module:
         :param module_id モジュールを構成する閉路の番号
         """
         self._id = module_id
+        self._node_list = set()
         self._edge_list = []
         self._cross_edge_list = []
         self._joint_pair_list = []
@@ -73,6 +74,9 @@ class Module:
     @property
     def cross_edge_list(self):
         return self._cross_edge_list
+
+    def add_node(self, node):
+        self._node_list.add(node)
 
     def add_edge(self, edge):
         self._edge_list.append(edge)
@@ -136,7 +140,7 @@ class Module:
         # (x,y,z)が最小となる座標(pos)とモジュールの大きさを計算する
         for edge in self._cross_edge_list:
             for n in range(0, 2):
-                node = edge.node1 if n == 1 else edge.node2
+                node = edge.node1 if n == 0 else edge.node2
 
                 # モジュールの最小、最大値を更新する
                 min_x = min(node.x, min_x)
@@ -151,6 +155,68 @@ class Module:
         self._width = max_x - min_x
         self._height = max_y - min_y
         self._depth = max_z - min_z
+
+    def rotate(self, axis):
+        cx = self.pos.x + (self.width / 2.0)
+        cy = self.pos.y + (self.height / 2.0)
+        cz = self.pos.z + (self.depth / 2.0)
+        center = Position(cx, cy, cz)
+
+        if axis == 'X':
+            for node in self._node_list:
+                rel_x = node.x - center.x
+                rel_y = node.y - center.y
+                rel_z = node.z - center.z
+                relative_pos = Position(rel_x, rel_y, rel_z)
+                relative_pos.set(rel_x, -rel_z, rel_y)
+                if self.__invalidate_rotate(rel_x, relative_pos.x):
+                    return False
+                node.pos.set(relative_pos.x + center.x, relative_pos.y + center.y, relative_pos.z + center.z)
+            self.update()
+
+            # rel_x, rel_y, rel_z = self.pos.x - center.x, self.pos.y - center.y, self.pos.z - center.z
+            # relative_pos = Position(rel_x, rel_y, rel_z)
+            # self._width, self._height = self._height, self._width
+            # relative_pos.set(relative_pos.x, -relative_pos.z, relative_pos.y)
+            # self._pos.set(relative_pos.x + cx, -1 * (relative_pos.y + cy), relative_pos.z + cz)
+        elif axis == 'Y':
+            for node in self._node_list:
+                rel_x = node.x - center.x
+                rel_y = node.y - center.y
+                rel_z = node.z - center.z
+                relative_pos = Position(rel_x, rel_y, rel_z)
+                relative_pos.set(rel_z, rel_y, -rel_x)
+                if self.__invalidate_rotate(rel_x, relative_pos.x):
+                    return False
+                node.pos.set(relative_pos.x + cx, relative_pos.y + cy, relative_pos.z + cz)
+            self.update()
+            # rel_x, rel_y, rel_z = self.pos.x - center.x, self.pos.y - center.y, self.pos.z - center.z
+            # relative_pos = Position(rel_x, rel_y, rel_z)
+            # self._width, self._depth = self._depth, self._width
+            # relative_pos.set(relative_pos.z, relative_pos.y, -relative_pos.x)
+            # self._pos.set(-1 * (relative_pos.x + cx), relative_pos.y + cy, relative_pos.z + cz)
+        else:
+            for node in self._node_list:
+                rel_x = node.x - center.x
+                rel_y = node.y - center.y
+                rel_z = node.z - center.z
+                relative_pos = Position(rel_x, rel_y, rel_z)
+                relative_pos.set(-rel_y, rel_x, rel_z)
+                if self.__invalidate_rotate(rel_x, relative_pos.x):
+                    return False
+                node.pos.set(relative_pos.x + cx, relative_pos.y + cy, relative_pos.z + cz)
+            self.update()
+            # rel_x, rel_y, rel_z = self.pos.x - center.x, self.pos.y - center.y, self.pos.z - center.z
+            # relative_pos = Position(rel_x, rel_y, rel_z)
+            # self._height, self._depth = self._depth, self._height
+            # relative_pos.set(-relative_pos.y, relative_pos.x, relative_pos.z)
+            # self._pos.set(relative_pos.x + cx, -1 * (relative_pos.y + cy), relative_pos.z + cz)
+
+        return True
+
+    @staticmethod
+    def __invalidate_rotate(from_, to):
+        return from_ % 2 != to % 2
 
     def debug(self):
         print("--- ", self._id, " ---")

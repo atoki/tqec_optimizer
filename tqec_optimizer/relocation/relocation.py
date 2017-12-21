@@ -39,7 +39,7 @@ class Relocation:
     def execute(self):
         """
         1.モジュール化と再接続による最適化を行う
-        2.回路内の空白の圧縮を行う
+        2.回路が内空白
         3.Sequence-Tripleを用いた局所探索法による再配置を行う
         """
         # reduction
@@ -57,7 +57,7 @@ class Relocation:
         # reduction
         graph = self.__sa_relocation("dual", graph)
         point = TqecEvaluator(None, graph, True).evaluate()
-        print("dual relocation cost: {}".format(point))
+        print("relocation cost: {}".format(point))
         CircuitWriter(graph).write("5-relocation.json")
 
         self.__add_injector(graph)
@@ -147,8 +147,8 @@ class Relocation:
 
     def __sa_relocation(self, type_, graph):
         initial_t = 100
-        final_t = 0.91
-        cool_rate = 0.97
+        final_t = 0.01
+        cool_rate = 0.99
         limit = 100
 
         module_list, joint_pair_list = ModuleListFactory(graph, type_).create()
@@ -156,6 +156,7 @@ class Relocation:
         place = SequenceTriple(type_, module_list)
         p1, p2, p3 = place.build_permutation()
         t = initial_t
+        first = True
         while t > final_t:
             for n in range(limit):
                 np1, np2, np3 = self.__create_neighborhood(type_, module_list, p1, p2, p3)
@@ -164,13 +165,21 @@ class Relocation:
 
                 new_cost = TqecEvaluator(module_list).evaluate()
 
+                if first:
+                    first = False
+                    p1, p2, p3 = np1, np2, np3
+                    current_cost = new_cost
+                    continue
+
                 if self.__should_change(new_cost - current_cost, t):
                     current_cost = new_cost
                     p1, p2, p3 = np1, np2, np3
+
                 else:
                     module_list = SequenceTriple(type_, p1, (p1, p2, p3)).recalculate_coordinate()
             t *= cool_rate
 
+        self.__color_cross_edge(module_list)
         graph = self.__to_graph(module_list)
         route_pair = TSP(graph, module_list, joint_pair_list).search()
         RipAndReroute(graph, module_list, route_pair).search()
@@ -180,12 +189,15 @@ class Relocation:
     def __create_neighborhood(self, type_, module_list, p1, p2, p3):
         np1, np2, np3 = p1[:], p2[:], p3[:]
 
-        strategy = random.randint(1, 2)
+        strategy = random.randint(1, 3)
         # swap
+        index, rotate = 0, None
         if strategy == 1:
             self.__swap(np1, np2, np3)
-        else:
+        elif strategy == 2:
             self.__shift(np1, np2, np3)
+        else:
+            index, rotate = self.__rotate(np1, np2, np3)
 
         module_list = SequenceTriple(type_, np1, (np1, np2, np3)).recalculate_coordinate()
 
@@ -193,6 +205,11 @@ class Relocation:
             return np1, np2, np3
 
         module_list = SequenceTriple(type_, p1, (p1, p2, p3)).recalculate_coordinate()
+        if rotate is not None:
+            p1[index].rotate(rotate)
+            p1[index].rotate(rotate)
+            p1[index].rotate(rotate)
+
         return None, None, None
 
     @staticmethod
@@ -237,6 +254,25 @@ class Relocation:
             p3.insert(p3_index + shift_size2, p3_module)
 
     @staticmethod
+    def __rotate(p1, p2, p3):
+        size = len(p1)
+        index = random.randint(0, size - 1)
+        axis = random.randint(1, 3)
+        rotate_module = p1[index]
+
+        if axis == 1:
+            if rotate_module.rotate('X'):
+                return index, 'X'
+        elif axis == 2:
+            if rotate_module.rotate('Y'):
+                return index, 'Y'
+        else:
+            if rotate_module.rotate('Z'):
+                return index, 'Z'
+
+        return index, None
+
+    @staticmethod
     def __should_change(delta, t):
         if delta <= 0:
             return 1
@@ -248,7 +284,7 @@ class Relocation:
     def __is_validate(module_list):
         used_node = {}
         for module_ in module_list:
-            for edge in module_.edge_list + module_.cross_edge_list:
+            for edge in module_.cross_edge_list:
                 node1, node2 = edge.node1, edge.node2
                 if node1 in used_node:
                     if edge.id != used_node[node1]:

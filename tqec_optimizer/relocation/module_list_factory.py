@@ -26,6 +26,8 @@ class ModuleListFactory:
             for edge in self._graph.edge_list:
                 if edge.id == loop_id and edge.type == self._type:
                     module_.add_edge(edge)
+                    module_.add_node(edge.node1)
+                    module_.add_node(edge.node2)
 
             if len(module_.edge_list) == 0:
                 continue
@@ -55,6 +57,8 @@ class ModuleListFactory:
                     if edge.node2 in used_node \
                     else self.__new_joint(edge.node2, edge.id)
                 cross_edge = self.__new__edge(joint1, joint2, "edge", edge.id)
+                module_.add_node(joint1)
+                module_.add_node(joint2)
                 module_.add_cross_edge(cross_edge)
                 self._joint_pair_list.append((joint1, joint2, cross_edge))
                 used_node[edge.node1] = joint1
