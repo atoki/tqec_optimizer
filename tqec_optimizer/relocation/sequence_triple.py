@@ -19,17 +19,13 @@ class SequenceTriple:
             self._permutation2.append(module_)
             self._permutation3.append(module_)
 
-        # sort permutation3
-        if self._type_ == "primal":
-            self._permutation3.sort(key=lambda m: (m.pos.x, m.pos.z))
-        else:
-            self._permutation3.sort(key=lambda m: (m.pos.z, m.pos.x))
+        # z direction
+        self._permutation3.sort(key=lambda m: (m.pos.z, m.pos.x))
+        self._permutation2.sort(key=lambda m: (m.pos.z, m.pos.x))
+        self._permutation1.sort(key=lambda m: (m.pos.z, m.pos.x))
 
-        # sort permutation2
-        self._permutation2.sort(key=lambda m: m.pos.x, reverse=True)
-
-        # sort permutation1
-        self._permutation1.sort(key=lambda m: m.pos.y, reverse=True)
+        # x direction
+        self._permutation2.sort(key=lambda m: (m.pos.x, -m.pos.z), reverse=True)
 
         return self._permutation1, self._permutation2, self._permutation3
 
