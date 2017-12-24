@@ -157,60 +157,37 @@ class Module:
         self._depth = max_z - min_z
 
     def rotate(self, axis):
-        cx = self.pos.x + (self.width / 2.0)
-        cy = self.pos.y + (self.height / 2.0)
-        cz = self.pos.z + (self.depth / 2.0)
-        center = Position(cx, cy, cz)
+        center = Position(self.pos.x + (self.width / 2.0),
+                          self.pos.y + (self.height / 2.0),
+                          self.pos.z + (self.depth / 2.0))
 
         if axis == 'X':
             for node in self._node_list:
-                rel_x = node.x - center.x
-                rel_y = node.y - center.y
-                rel_z = node.z - center.z
+                rel_x, rel_y, rel_z = node.x - center.x, node.y - center.y, node.z - center.z
                 relative_pos = Position(rel_x, rel_y, rel_z)
                 relative_pos.set(rel_x, -rel_z, rel_y)
                 if self.__invalidate_rotate(rel_x, relative_pos.x):
                     return False
                 node.pos.set(relative_pos.x + center.x, relative_pos.y + center.y, relative_pos.z + center.z)
             self.update()
-
-            # rel_x, rel_y, rel_z = self.pos.x - center.x, self.pos.y - center.y, self.pos.z - center.z
-            # relative_pos = Position(rel_x, rel_y, rel_z)
-            # self._width, self._height = self._height, self._width
-            # relative_pos.set(relative_pos.x, -relative_pos.z, relative_pos.y)
-            # self._pos.set(relative_pos.x + cx, -1 * (relative_pos.y + cy), relative_pos.z + cz)
         elif axis == 'Y':
             for node in self._node_list:
-                rel_x = node.x - center.x
-                rel_y = node.y - center.y
-                rel_z = node.z - center.z
+                rel_x, rel_y, rel_z = node.x - center.x, node.y - center.y, node.z - center.z
                 relative_pos = Position(rel_x, rel_y, rel_z)
                 relative_pos.set(rel_z, rel_y, -rel_x)
                 if self.__invalidate_rotate(rel_x, relative_pos.x):
                     return False
-                node.pos.set(relative_pos.x + cx, relative_pos.y + cy, relative_pos.z + cz)
+                node.pos.set(relative_pos.x + center.x, relative_pos.y + center.y, relative_pos.z + center.z)
             self.update()
-            # rel_x, rel_y, rel_z = self.pos.x - center.x, self.pos.y - center.y, self.pos.z - center.z
-            # relative_pos = Position(rel_x, rel_y, rel_z)
-            # self._width, self._depth = self._depth, self._width
-            # relative_pos.set(relative_pos.z, relative_pos.y, -relative_pos.x)
-            # self._pos.set(-1 * (relative_pos.x + cx), relative_pos.y + cy, relative_pos.z + cz)
         else:
             for node in self._node_list:
-                rel_x = node.x - center.x
-                rel_y = node.y - center.y
-                rel_z = node.z - center.z
+                rel_x, rel_y, rel_z = node.x - center.x, node.y - center.y, node.z - center.z
                 relative_pos = Position(rel_x, rel_y, rel_z)
                 relative_pos.set(-rel_y, rel_x, rel_z)
                 if self.__invalidate_rotate(rel_x, relative_pos.x):
                     return False
-                node.pos.set(relative_pos.x + cx, relative_pos.y + cy, relative_pos.z + cz)
+                node.pos.set(relative_pos.x + center.x, relative_pos.y + center.y, relative_pos.z + center.z)
             self.update()
-            # rel_x, rel_y, rel_z = self.pos.x - center.x, self.pos.y - center.y, self.pos.z - center.z
-            # relative_pos = Position(rel_x, rel_y, rel_z)
-            # self._height, self._depth = self._depth, self._height
-            # relative_pos.set(-relative_pos.y, relative_pos.x, relative_pos.z)
-            # self._pos.set(relative_pos.x + cx, -1 * (relative_pos.y + cy), relative_pos.z + cz)
 
         return True
 

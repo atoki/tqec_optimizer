@@ -55,7 +55,7 @@ class Relocation:
         CircuitWriter(graph).write("4-compaction.json")
 
         # reduction
-        graph = self.__sa_relocation("dual", graph)
+        graph = self.__sa_relocation("primal", graph)
         point = TqecEvaluator(None, graph, True).evaluate()
         print("relocation cost: {}".format(point))
         CircuitWriter(graph).write("5-relocation.json")
@@ -156,20 +156,17 @@ class Relocation:
         place = SequenceTriple(type_, module_list)
         p1, p2, p3 = place.build_permutation()
         t = initial_t
-        first = True
+        init = True
         while t > final_t:
             for n in range(limit):
-                np1, np2, np3 = self.__create_neighborhood(type_, module_list, p1, p2, p3)
+                np1, np2, np3 = self.__create_neighborhood(type_, module_list, p1, p2, p3, init)
                 if np1 is None:
                     continue
 
                 new_cost = TqecEvaluator(module_list).evaluate()
 
-                if first:
-                    first = False
-                    p1, p2, p3 = np1, np2, np3
-                    current_cost = new_cost
-                    continue
+                if init and self.__is_validate(module_list):
+                    init = False
 
                 if self.__should_change(new_cost - current_cost, t):
                     current_cost = new_cost
@@ -179,14 +176,13 @@ class Relocation:
                     module_list = SequenceTriple(type_, p1, (p1, p2, p3)).recalculate_coordinate()
             t *= cool_rate
 
-        self.__color_cross_edge(module_list)
         graph = self.__to_graph(module_list)
         route_pair = TSP(graph, module_list, joint_pair_list).search()
         RipAndReroute(graph, module_list, route_pair).search()
 
         return graph
 
-    def __create_neighborhood(self, type_, module_list, p1, p2, p3):
+    def __create_neighborhood(self, type_, module_list, p1, p2, p3, init):
         np1, np2, np3 = p1[:], p2[:], p3[:]
 
         strategy = random.randint(1, 3)
@@ -201,7 +197,7 @@ class Relocation:
 
         module_list = SequenceTriple(type_, np1, (np1, np2, np3)).recalculate_coordinate()
 
-        if self.__is_validate(module_list):
+        if init or self.__is_validate(module_list):
             return np1, np2, np3
 
         module_list = SequenceTriple(type_, p1, (p1, p2, p3)).recalculate_coordinate()

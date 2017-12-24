@@ -40,7 +40,7 @@ def main():
             output_file = a
 
     if output_file is None:
-        output_file = "7-result.json"
+        output_file = "6-result.json"
 
     # preparation
     circuit = CircuitReader().read_circuit(input_file)
