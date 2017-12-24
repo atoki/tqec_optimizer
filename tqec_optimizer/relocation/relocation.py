@@ -24,7 +24,8 @@ class Relocation:
     """
     モジュールへの切断と再配置による最適化を行う
     """
-    def __init__(self, graph):
+    def __init__(self, type_, graph):
+        self._type = type_
         self._graph = graph
         self._module_list = []
         self._joint_pair_list = []
@@ -55,7 +56,7 @@ class Relocation:
         CircuitWriter(graph).write("4-compaction.json")
 
         # reduction
-        graph = self.__sa_relocation("primal", graph)
+        graph = self.__sa_relocation(self._type, graph)
         point = TqecEvaluator(None, graph, True).evaluate()
         print("relocation cost: {}".format(point))
         CircuitWriter(graph).write("5-relocation.json")
@@ -67,6 +68,8 @@ class Relocation:
     def __reduction(self, graph):
         """
         最初にモジュール化と再接続による最適化を行う
+
+        :param graph グラフ
         """
         module_list, joint_pair_list = ModuleListFactory(graph, "primal").create()
         graph = self.__to_graph(module_list)
@@ -146,6 +149,11 @@ class Relocation:
         return graph
 
     def __sa_relocation(self, type_, graph):
+        """
+        Simulated Annealingによる再配置を行う
+
+        :param graph グラフ
+        """
         initial_t = 100
         final_t = 0.01
         cool_rate = 0.99
@@ -158,6 +166,8 @@ class Relocation:
         t = initial_t
         init = True
         while t > final_t:
+            if t % 10 < 1.0:
+                print(t)
             for n in range(limit):
                 np1, np2, np3 = self.__create_neighborhood(type_, module_list, p1, p2, p3, init)
                 if np1 is None:
@@ -183,6 +193,20 @@ class Relocation:
         return graph
 
     def __create_neighborhood(self, type_, module_list, p1, p2, p3, init):
+        """
+        SA用の近傍を生成する
+        1. swap近傍
+        2. shift近傍
+        3. rotate近傍
+        以上の3つを等確率で一つ採用
+
+        :param type_ dual or primal
+        :param module_list モジュールの集合
+        :param p1 順列1
+        :param p2 順列2
+        :param p3 順列3
+        :param init 初期配置が決定していればTrue, そうでなければFalse
+        """
         np1, np2, np3 = p1[:], p2[:], p3[:]
 
         strategy = random.randint(1, 3)

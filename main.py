@@ -24,12 +24,13 @@ def usage():
 
 def main():
     try:
-        opts, args = getopt.getopt(sys.argv[1:], "h:i:o:", ["help", "input=", "output="])
+        opts, args = getopt.getopt(sys.argv[1:], "h:i:o:t:", ["help", "input=", "output=", "type="])
     except getopt.GetoptError:
         usage()
         sys.exit(2)
     input_file = None
     output_file = None
+    type_ = None
     for o, a in opts:
         if o in ("-h", "--help"):
             usage()
@@ -38,9 +39,14 @@ def main():
             input_file = a
         if o in ("-o", "--output"):
             output_file = a
+        if o in ("-t", "--type"):
+            type_ = a
 
     if output_file is None:
         output_file = "6-result.json"
+
+    if type_ is None:
+        type_ = "dual"
 
     # preparation
     circuit = CircuitReader().read_circuit(input_file)
@@ -54,7 +60,7 @@ def main():
     CircuitWriter(graph).write("2-transform.json")
 
     # optimization of topology
-    graph = Relocation(graph).execute()
+    graph = Relocation(type_, graph).execute()
     print("relocation cost: {}".format(evaluate(graph)))
 
     # output

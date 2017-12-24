@@ -145,8 +145,9 @@ class Transformation:
         self.__connect_loop(cross_loop_list[0], cross_loop_list[1])
 
         # ループを1つにするためにノードをつなげる
-        self.__connect_node(cross_loop_list[0], node1, node3)
-        self.__connect_node(cross_loop_list[0], node2, node4)
+        if loop.type == "dual":
+            self.__connect_node(cross_loop_list[0], node1, node3)
+            self.__connect_node(cross_loop_list[0], node2, node4)
 
         return True
 
