@@ -9,6 +9,7 @@ from .sequence_triple import SequenceTriple
 from .neighborhood_generator import SwapNeighborhoodGenerator, ShiftNeighborhoodGenerator
 from .tsp import TSP
 from .rip_and_reroute import RipAndReroute
+from .routing import Routing
 from .tqec_evaluator import TqecEvaluator
 from .compaction import Compaction
 
@@ -74,7 +75,7 @@ class Relocation:
         module_list, joint_pair_list = ModuleListFactory(graph, "primal").create()
         graph = self.__to_graph(module_list)
         route_pair = TSP(graph, module_list, joint_pair_list).search()
-        RipAndReroute(graph, module_list, route_pair).search()
+        Routing(graph, module_list, route_pair).execute()
 
         result_graph = graph
         cost, loop_count = TqecEvaluator(None, result_graph, True).evaluate(), 0
@@ -155,8 +156,8 @@ class Relocation:
         :param graph グラフ
         """
         initial_t = 100
-        final_t = 0.01
-        cool_rate = 0.99
+        final_t = 0.1
+        cool_rate = 0.97
         limit = 100
 
         module_list, joint_pair_list = ModuleListFactory(graph, type_).create()
@@ -187,8 +188,9 @@ class Relocation:
             t *= cool_rate
 
         graph = self.__to_graph(module_list)
+        CircuitWriter(graph).write("4.5-relocation.json")
         route_pair = TSP(graph, module_list, joint_pair_list).search()
-        RipAndReroute(graph, module_list, route_pair).search()
+        Routing(graph, module_list, route_pair).execute()
 
         return graph
 

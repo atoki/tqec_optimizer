@@ -2,7 +2,7 @@ import math
 
 from .module_list_factory import ModuleListFactory
 from .tsp import TSP
-from .rip_and_reroute import RipAndReroute
+from .routing import Routing
 
 from ..position import Position
 from ..edge import Edge
@@ -43,7 +43,7 @@ class Compaction:
 
         graph = self.__to_graph(module_list)
         route_pair = TSP(graph, module_list, joint_pair_list).search()
-        RipAndReroute(graph, module_list, route_pair).search()
+        Routing(graph, module_list, route_pair).execute()
 
         return graph
 
@@ -71,7 +71,7 @@ class Compaction:
 
         graph = self.__to_graph(module_list)
         route_pair = TSP(graph, module_list, joint_pair_list).search()
-        RipAndReroute(graph, module_list, route_pair).search()
+        Routing(graph, module_list, route_pair).execute()
 
         return graph
 
