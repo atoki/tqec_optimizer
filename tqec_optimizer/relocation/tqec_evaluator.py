@@ -8,6 +8,8 @@ class TqecEvaluator:
         self._module_list = module_list
         self._graph = graph
         self._is_graph = is_graph
+        self._alpha = 0.1
+        self._beta = 1.0
 
     def evaluate(self):
         point = 0
@@ -28,7 +30,8 @@ class TqecEvaluator:
             for id_, edge_list in edge_map.items():
                 point += self.__evaluate_wiring_distance(edge_list)
 
-            point += self.__evaluate_convex_hull(node_list)
+            point *= self._alpha
+            point += self._beta * self.__evaluate_convex_hull(node_list)
 
             return point
 

@@ -2,8 +2,7 @@ from ..position import Position
 
 
 class SequenceTriple:
-    def __init__(self, type_, module_list, permutations=None):
-        self._type_ = type_
+    def __init__(self, module_list, permutations=None):
         self._module_list = module_list
         self._permutation1 = [] if permutations is None else permutations[0]
         self._permutation2 = [] if permutations is None else permutations[1]
@@ -48,7 +47,7 @@ class SequenceTriple:
                 p2_list.add(module_)
 
         placed_module_list = p2_list
-        x = -1 if self._type_ == "primal" else -2
+        x = 0
         for module_ in placed_module_list:
             x = max(x, module_.pos.x + module_.width)
 
@@ -73,7 +72,7 @@ class SequenceTriple:
                 p2_list.add(module_)
 
         placed_module_list = p1_list & p2_list
-        y = -1 if self._type_ == "primal" else 0
+        y = 0
         for module_ in placed_module_list:
             y = max(y, module_.pos.y + module_.height)
 
@@ -95,7 +94,7 @@ class SequenceTriple:
                 p2_list.add(module_)
 
         placed_module_list = p1_list & p2_list
-        z = -1 if self._type_ == "primal" else 0
+        z = 0
         for module_ in placed_module_list:
             z = max(z, module_.pos.z + module_.depth)
 

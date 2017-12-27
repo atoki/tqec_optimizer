@@ -35,14 +35,10 @@ class Relocation:
 
     def execute(self):
         """
-        1.モジュール化と再接続による最適化を行う
-        2.回路が内空白
-        3.Sequence-Tripleを用いた局所探索法による再配置を行う
+        Sequence-Tripleを用いたSAによる再配置を行う
         """
-        # reduction
         graph = self.__sa_relocation(self._type)
         CircuitWriter(graph).write("5-relocation.json")
-
         self.__add_injector(graph)
 
         return graph
@@ -54,7 +50,7 @@ class Relocation:
         :param type_ primal or dual モジュールを作る基準
         """
         initial_t = 100
-        final_t = 0.1
+        final_t = 0.01
         cool_rate = 0.99
         limit = 100
 
@@ -76,7 +72,7 @@ class Relocation:
         CircuitWriter(graph).write("3-module.json")
 
         current_cost = TqecEvaluator(module_list).evaluate()
-        place = SequenceTriple(type_, module_list)
+        place = SequenceTriple(module_list)
         p1, p2, p3 = place.build_permutation()
         t = initial_t
         init = True
@@ -99,7 +95,7 @@ class Relocation:
                     current_cost = new_cost
                     p1, p2, p3 = np1, np2, np3
                 else:
-                    module_list = SequenceTriple(type_, p1, (p1, p2, p3)).recalculate_coordinate()
+                    module_list = SequenceTriple(p1, (p1, p2, p3)).recalculate_coordinate()
             t *= cool_rate
 
         graph = self.__to_graph(module_list)
@@ -136,12 +132,12 @@ class Relocation:
         else:
             index, rotate = self.__rotate(np1, np2, np3)
 
-        module_list = SequenceTriple(type_, np1, (np1, np2, np3)).recalculate_coordinate()
+        module_list = SequenceTriple(np1, (np1, np2, np3)).recalculate_coordinate()
 
         if init or self.__is_validate(module_list):
             return np1, np2, np3
 
-        module_list = SequenceTriple(type_, p1, (p1, p2, p3)).recalculate_coordinate()
+        module_list = SequenceTriple(p1, (p1, p2, p3)).recalculate_coordinate()
         if rotate is not None:
             p1[index].rotate(rotate)
             p1[index].rotate(rotate)
