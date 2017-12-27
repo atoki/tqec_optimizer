@@ -104,10 +104,12 @@ class SA:
                 else:
                     route = BestFirstSearch(self._route[i],
                                             self._route[j],
+                                            1,
+                                            None,
                                             self._used_node_array,
-                                            self._invalid_edge,
                                             self._size,
-                                            self._space).search()
+                                            self._space,
+                                            True).search()
                     dist = (len(route) - 1) * 2.0
                     self._dist_table[(self._route[i], self._route[j])] = dist
                     self._dist_table[(self._route[j], self._route[i])] = dist

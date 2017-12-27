@@ -4,41 +4,47 @@ from ..graph import Node
 
 
 class BestFirstSearch:
-    def __init__(self, src, dst, used_node_array, invalid_edge, size, space):
+    def __init__(self, src, dst, count, grid, used_node_array, size, space, init=False):
         self._src = src
         self._dst = dst
+        self._rate = pow(1.05, count)
+        self._grid = grid
         self._used_node_array = used_node_array
-        self._invalid_edge = invalid_edge
         self._space = space
         self._size = size
+        self._init = init
 
     def search(self):
-        first = Node(self._src.x, self._src.y, self._src.z)
-        last = Node(self._dst.x, self._dst.y, self._dst.z)
-
         queue = []
         # keyは探索済みノード. valueはその前のノード
-        visited_node = {first: Node(0, 0, 0)}
-        heapq.heappush(queue, (0, first))
-        solve = False
+        visited_node = {self._src: self._src}
+        heapq.heappush(queue, (0, self._src))
         while len(queue) != 0:
             current_node_cost, current_node = heapq.heappop(queue)
             if self.__is_dst_node(current_node):
-                solve = True
                 break
 
             for next_node in self.__expand_node(current_node):
                 if next_node not in visited_node:
                     visited_node[next_node] = current_node
-                    heapq.heappush(queue, (current_node_cost + 1, next_node))
+                    cost = self.__evaluate(current_node_cost, visited_node[current_node], current_node, next_node)
+                    heapq.heappush(queue, (cost, next_node))
 
+        route = self.__create_route(visited_node)
+        return route
+
+    def __create_route(self, visited_node):
         route = []
-        node = last
-        if solve:
-            while not self.__is_src_node(node):
-                route.insert(0, node)
-                node = visited_node[node]
-            route.insert(0, node)
+        node = self._dst
+        if self._grid:
+            self._grid[node.x + self._space][node.y + self._space][node.z + self._space] += 1
+        while not self.__is_src_node(node):
+            route.append(node)
+            node = visited_node[node]
+            if self._grid:
+                self._grid[node.x + self._space][node.y + self._space][node.z + self._space] += 1
+        route.append(node)
+        route.reverse()
 
         return route
 
@@ -54,6 +60,28 @@ class BestFirstSearch:
 
         return False
 
+    def __evaluate(self, current_node_cost, previous_node, current_node, next_node):
+        if self._init:
+            return current_node_cost + 1.0
+
+        point = current_node_cost + 1.0
+        t, c = 2.0, 20.0
+        # touch -> touch
+        if self._grid[previous_node.x + self._space][previous_node.y + self._space][previous_node.z + self._space] > 0.0 \
+                and self._grid[current_node.x + self._space][current_node.y + self._space][current_node.z + self._space] > 0.0:
+            point += self._rate * t
+        # empty -> touch
+        elif self._grid[current_node.x + self._space][current_node.y + self._space][current_node.z + self._space] == 0.0 \
+                and self._grid[next_node.x + self._space][next_node.y + self._space][next_node.z + self._space] > 0.0:
+            point += self._rate * t
+        # cross (= empty -> touch -> empty)
+        elif self._grid[previous_node.x + self._space][previous_node.y + self._space][previous_node.z + self._space] == 0.0 \
+                and self._grid[current_node.x + self._space][current_node.y + self._space][current_node.z + self._space] > 0.0 \
+                and self._grid[next_node.x + self._space][next_node.y + self._space][next_node.z + self._space] == 0.0:
+            point += self._rate * c
+
+        return point
+
     def __expand_node(self, node):
         expanded_nodes = []
         dx = [2, 0, -2, 0, 0, 0]
@@ -68,9 +96,6 @@ class BestFirstSearch:
         return expanded_nodes
 
     def __is_prohibit(self, current_node, next_node):
-        if current_node in self._invalid_edge and next_node == self._invalid_edge[current_node]:
-            return True
-
         if next_node.x < -self._space or next_node.x > self._size[0] \
                 or next_node.y < -self._space or next_node.y > self._size[1] \
                 or next_node.z < -self._space or next_node.z > self._size[2]:

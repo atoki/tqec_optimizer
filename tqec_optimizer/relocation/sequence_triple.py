@@ -1,5 +1,3 @@
-from .module import Module
-
 from ..position import Position
 
 

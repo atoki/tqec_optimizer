@@ -1,17 +1,11 @@
-import copy
 import random
 import math
-import sys
 from collections import defaultdict
 
-from .module_list_factory import ModuleListFactory
 from .sequence_triple import SequenceTriple
-from .neighborhood_generator import SwapNeighborhoodGenerator, ShiftNeighborhoodGenerator
 from .tsp import TSP
-from .rip_and_reroute import RipAndReroute
 from .routing import Routing
 from .tqec_evaluator import TqecEvaluator
-from .compaction import Compaction
 from .module_factory import ModuleFactory
 
 from ..position import Position
@@ -19,8 +13,6 @@ from ..graph import Graph
 from ..node import Node
 from ..edge import Edge
 from ..circuit_writer import CircuitWriter
-
-sys.setrecursionlimit(10000)
 
 
 class Relocation:
@@ -47,124 +39,11 @@ class Relocation:
         2.回路が内空白
         3.Sequence-Tripleを用いた局所探索法による再配置を行う
         """
-        # module_list, joint_pair_list = [], []
-        # for loop in self._loop_list:
-        #     if loop.type != self._type:
-        #         continue
-        #     module_, joint_pair = ModuleFactory(self._type, loop).create()
-        #     module_list.append(module_)
-        #     joint_pair_list.extend(joint_pair)
-        #
-        # new_pos = Position(0, 0, 0)
-        # for module_ in module_list:
-        #     new_pos.debug()
-        #     module_.set_position(new_pos, True)
-        #     new_pos.incz(module_.depth)
-        #
-        # graph = self.__to_graph(module_list)
-        # route_pair = TSP(graph, module_list, joint_pair_list).search()
-        # Routing(graph, module_list, route_pair).execute()
-
-        # # reduction
-        # graph = self.__reduction(self._graph)
-        # point = TqecEvaluator(None, graph, True).evaluate()
-        # print("reduction cost: {}".format(point))
-        # CircuitWriter(graph).write("3-reduction.json")
-        #
-        # # compaction
-        # graph = Compaction(graph).execute()
-        # point = TqecEvaluator(None, graph, True).evaluate()
-        # print("compaction cost: {}".format(point))
-        # CircuitWriter(graph).write("4-compaction.json")
-
         # reduction
         graph = self.__sa_relocation(self._type)
         CircuitWriter(graph).write("5-relocation.json")
 
         self.__add_injector(graph)
-
-        return graph
-
-    def __reduction(self, graph):
-        """
-        最初にモジュール化と再接続による最適化を行う
-
-        :param graph グラフ
-        """
-        module_list, joint_pair_list = ModuleListFactory(graph, "primal").create()
-        graph = self.__to_graph(module_list)
-        route_pair = TSP(graph, module_list, joint_pair_list).search()
-        Routing(graph, module_list, route_pair).execute()
-
-        result_graph = graph
-        cost, loop_count = TqecEvaluator(None, result_graph, True).evaluate(), 0
-        primal_reduction, dual_reduction = True, True
-        while primal_reduction or dual_reduction:
-            type_ = "primal" if loop_count % 2 == 0 else "dual"
-            if type_ == "dual":
-                dual_reduction = False
-            else:
-                primal_reduction = False
-            module_list, joint_pair_list = ModuleListFactory(result_graph, type_).create()
-            graph = self.__to_graph(module_list)
-            route_pair = TSP(graph, module_list, joint_pair_list).search()
-            RipAndReroute(graph, module_list, route_pair).search()
-            current_cost = TqecEvaluator(None, graph, True).evaluate()
-            if cost > current_cost:
-                if type_ == "dual":
-                    dual_reduction = True
-                else:
-                    primal_reduction = True
-                result_graph = graph
-                cost = current_cost
-            loop_count += 1
-
-        return result_graph
-
-    def __relocation(self, graph):
-        """
-        Sequence-Tripleを用いた局所探索法による再配置を行う
-        """
-        primal_reduction, dual_reduction = True, True
-        loop_count = 0
-        while primal_reduction or dual_reduction:
-            type_ = "dual" if loop_count % 2 == 0 else "primal"
-            if loop_count > 1:
-                if type_ == "dual":
-                    dual_reduction = False
-                else:
-                    primal_reduction = False
-            reduction = True
-            while reduction:
-                reduction = False
-                module_list, joint_pair_list = ModuleListFactory(graph, type_).create()
-                cost = TqecEvaluator(module_list).evaluate()
-                place = SequenceTriple(type_, module_list)
-                p1, p2, p3 = place.build_permutation()
-                swap_permutations_list = SwapNeighborhoodGenerator((p1, p2, p3)).generator()
-                shift_permutations_list = ShiftNeighborhoodGenerator((p1, p2, p3)).generator()
-
-                result_module_list = copy.deepcopy(module_list)
-                result_joint_pair = copy.deepcopy(joint_pair_list)
-                for step, permutations in enumerate(swap_permutations_list + shift_permutations_list):
-                    relocation_module = SequenceTriple(type_, permutations[0], permutations).recalculate_coordinate()
-                    if self.__is_validate(relocation_module):
-                        current_cost = TqecEvaluator(relocation_module).evaluate()
-                        if cost > current_cost:
-                            reduction = True
-                            if type_ == "dual":
-                                dual_reduction = True
-                            if type_ == "primal":
-                                primal_reduction = True
-                            cost = current_cost
-                            result_module_list = copy.deepcopy(relocation_module)
-                            result_joint_pair = copy.deepcopy(joint_pair_list)
-                graph = self.__to_graph(result_module_list)
-                route_pair = TSP(graph, result_module_list, result_joint_pair).search()
-                RipAndReroute(graph, result_module_list, route_pair).search()
-                file_name = str(4 + loop_count) + "-relocation.json"
-                CircuitWriter(graph).write(file_name)
-            loop_count += 1
 
         return graph
 
@@ -175,7 +54,7 @@ class Relocation:
         :param type_ primal or dual モジュールを作る基準
         """
         initial_t = 100
-        final_t = 0.01
+        final_t = 0.1
         cool_rate = 0.99
         limit = 100
 
@@ -194,7 +73,7 @@ class Relocation:
             new_pos.incz(module_.depth)
 
         graph = self.__to_graph(module_list)
-        CircuitWriter(graph).write("3.5-module.json")
+        CircuitWriter(graph).write("3-module.json")
 
         current_cost = TqecEvaluator(module_list).evaluate()
         place = SequenceTriple(type_, module_list)
@@ -224,7 +103,7 @@ class Relocation:
             t *= cool_rate
 
         graph = self.__to_graph(module_list)
-        CircuitWriter(graph).write("4.5-relocation.json")
+        CircuitWriter(graph).write("4-relocation.json")
         route_pair = TSP(graph, module_list, joint_pair_list).search()
         Routing(graph, module_list, route_pair).execute()
 

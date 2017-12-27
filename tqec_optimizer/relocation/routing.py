@@ -1,6 +1,6 @@
 from collections import defaultdict
 
-from .bfs import BFS
+from .best_first_search import BestFirstSearch
 
 from ..node import Node
 from ..edge import Edge
@@ -36,13 +36,13 @@ class Routing:
         routes = defaultdict(list)
         # 初期経路
         for index, (src, dst) in enumerate(self._route_pair.items(), start=1):
-            route = BFS(src, dst,
-                        1,
-                        self._grid,
-                        self._used_node_array,
-                        self._size,
-                        self._space,
-                        True).search()
+            route = BestFirstSearch(src, dst,
+                                    1,
+                                    self._grid,
+                                    self._used_node_array,
+                                    self._size,
+                                    self._space,
+                                    True).search()
             routes[index] = route
 
         # 経路決定まで引き剥がしをlimitを限度に繰り返す
@@ -53,12 +53,12 @@ class Routing:
             print("loop: {}".format(count))
             for index, (src, dst) in enumerate(self._route_pair.items(), start=1):
                 self.__clear(index, routes)
-                route = BFS(src, dst,
-                            count,
-                            self._grid,
-                            self._used_node_array,
-                            self._size,
-                            self._space).search()
+                route = BestFirstSearch(src, dst,
+                                        count,
+                                        self._grid,
+                                        self._used_node_array,
+                                        self._size,
+                                        self._space).search()
                 routes[index] = route
             update = self.__check()
             if count == limit:
