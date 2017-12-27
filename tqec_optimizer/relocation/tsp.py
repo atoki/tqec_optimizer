@@ -34,8 +34,6 @@ class TSP:
 
     def __assign_target_node(self, id_, joint_list):
         if len(joint_list) == 2:
-            joint_list[0].set_target_node(joint_list[1])
-            joint_list[1].set_target_node(joint_list[0])
             self._route_list[id_].append(joint_list[0])
             self._route_list[id_].append(joint_list[1])
             self._route_pair[joint_list[0]] = joint_list[1]

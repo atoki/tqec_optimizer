@@ -75,6 +75,8 @@ class Transformation:
                     no += 1
                     break
 
+        return self._loop_list
+
     def __create_loop(self):
         """
         ループを生成する
@@ -124,8 +126,8 @@ class Transformation:
             for cross_edge in edge.cross_edge_list:
                 cross_edge_list.append(cross_edge)
 
-        node1, node2 = cross_edge_list[0].node1, cross_edge_list[0].node2
-        node3, node4 = cross_edge_list[1].node1, cross_edge_list[1].node2
+        # node1, node2 = cross_edge_list[0].node1, cross_edge_list[0].node2
+        # node3, node4 = cross_edge_list[1].node1, cross_edge_list[1].node2
 
         # ループを削除する
         cross_loop_list = []
@@ -145,9 +147,9 @@ class Transformation:
         self.__connect_loop(cross_loop_list[0], cross_loop_list[1])
 
         # ループを1つにするためにノードをつなげる
-        if loop.type == "dual":
-            self.__connect_node(cross_loop_list[0], node1, node3)
-            self.__connect_node(cross_loop_list[0], node2, node4)
+        # if loop.type == "dual":
+        #     self.__connect_node(cross_loop_list[0], node1, node3)
+        #     self.__connect_node(cross_loop_list[0], node2, node4)
 
         return True
 

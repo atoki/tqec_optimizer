@@ -12,7 +12,9 @@ from .rip_and_reroute import RipAndReroute
 from .routing import Routing
 from .tqec_evaluator import TqecEvaluator
 from .compaction import Compaction
+from .module_factory import ModuleFactory
 
+from ..position import Position
 from ..graph import Graph
 from ..node import Node
 from ..edge import Edge
@@ -25,8 +27,9 @@ class Relocation:
     """
     モジュールへの切断と再配置による最適化を行う
     """
-    def __init__(self, type_, graph):
+    def __init__(self, type_, loop_list, graph):
         self._type = type_
+        self._loop_list = loop_list
         self._graph = graph
         self._module_list = []
         self._joint_pair_list = []
@@ -44,22 +47,38 @@ class Relocation:
         2.回路が内空白
         3.Sequence-Tripleを用いた局所探索法による再配置を行う
         """
-        # reduction
-        graph = self.__reduction(self._graph)
-        point = TqecEvaluator(None, graph, True).evaluate()
-        print("reduction cost: {}".format(point))
-        CircuitWriter(graph).write("3-reduction.json")
+        # module_list, joint_pair_list = [], []
+        # for loop in self._loop_list:
+        #     if loop.type != self._type:
+        #         continue
+        #     module_, joint_pair = ModuleFactory(self._type, loop).create()
+        #     module_list.append(module_)
+        #     joint_pair_list.extend(joint_pair)
+        #
+        # new_pos = Position(0, 0, 0)
+        # for module_ in module_list:
+        #     new_pos.debug()
+        #     module_.set_position(new_pos, True)
+        #     new_pos.incz(module_.depth)
+        #
+        # graph = self.__to_graph(module_list)
+        # route_pair = TSP(graph, module_list, joint_pair_list).search()
+        # Routing(graph, module_list, route_pair).execute()
 
-        # compaction
-        graph = Compaction(graph).execute()
-        point = TqecEvaluator(None, graph, True).evaluate()
-        print("compaction cost: {}".format(point))
-        CircuitWriter(graph).write("4-compaction.json")
+        # # reduction
+        # graph = self.__reduction(self._graph)
+        # point = TqecEvaluator(None, graph, True).evaluate()
+        # print("reduction cost: {}".format(point))
+        # CircuitWriter(graph).write("3-reduction.json")
+        #
+        # # compaction
+        # graph = Compaction(graph).execute()
+        # point = TqecEvaluator(None, graph, True).evaluate()
+        # print("compaction cost: {}".format(point))
+        # CircuitWriter(graph).write("4-compaction.json")
 
         # reduction
-        graph = self.__sa_relocation(self._type, graph)
-        point = TqecEvaluator(None, graph, True).evaluate()
-        print("relocation cost: {}".format(point))
+        graph = self.__sa_relocation(self._type)
         CircuitWriter(graph).write("5-relocation.json")
 
         self.__add_injector(graph)
@@ -149,18 +168,34 @@ class Relocation:
 
         return graph
 
-    def __sa_relocation(self, type_, graph):
+    def __sa_relocation(self, type_):
         """
         Simulated Annealingによる再配置を行う
 
-        :param graph グラフ
+        :param type_ primal or dual モジュールを作る基準
         """
         initial_t = 100
-        final_t = 0.1
-        cool_rate = 0.97
+        final_t = 0.01
+        cool_rate = 0.99
         limit = 100
 
-        module_list, joint_pair_list = ModuleListFactory(graph, type_).create()
+        module_list, joint_pair_list = [], []
+        for loop in self._loop_list:
+            if loop.type != type_:
+                continue
+            module_, joint_pair = ModuleFactory(type_, loop).create()
+            module_list.append(module_)
+            joint_pair_list.extend(joint_pair)
+
+        new_pos = Position(0, 0, 0)
+        for module_ in module_list:
+            new_pos.debug()
+            module_.set_position(Position(new_pos.x, new_pos.y, new_pos.z), True)
+            new_pos.incz(module_.depth)
+
+        graph = self.__to_graph(module_list)
+        CircuitWriter(graph).write("3.5-module.json")
+
         current_cost = TqecEvaluator(module_list).evaluate()
         place = SequenceTriple(type_, module_list)
         p1, p2, p3 = place.build_permutation()
@@ -177,12 +212,13 @@ class Relocation:
                 new_cost = TqecEvaluator(module_list).evaluate()
 
                 if init and self.__is_validate(module_list):
+                    p1, p2, p3 = np1, np2, np3
+                    t = initial_t
                     init = False
 
                 if self.__should_change(new_cost - current_cost, t):
                     current_cost = new_cost
                     p1, p2, p3 = np1, np2, np3
-
                 else:
                     module_list = SequenceTriple(type_, p1, (p1, p2, p3)).recalculate_coordinate()
             t *= cool_rate

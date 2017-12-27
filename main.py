@@ -55,12 +55,12 @@ def main():
     print("first cost: {}".format(evaluate(graph)))
 
     # optimization of non topology
-    Transformation(graph).execute()
+    loop_list = Transformation(graph).execute()
     print("transformation cost: {}".format(evaluate(graph)))
     CircuitWriter(graph).write("2-transform.json")
 
     # optimization of topology
-    graph = Relocation(type_, graph).execute()
+    graph = Relocation(type_, loop_list, graph).execute()
     print("relocation cost: {}".format(evaluate(graph)))
 
     # output
@@ -71,7 +71,7 @@ def evaluate(graph):
     min_x = min_y = min_z = math.inf
     max_x = max_y = max_z = -math.inf
     for node in graph.node_list:
-        if node.type is "primal":
+        if node.type == "primal":
             min_x, min_y, min_z = min(node.x, min_x), min(node.y, min_y), min(node.z, min_z)
             max_x, max_y, max_z = max(node.x, max_x), max(node.y, max_y), max(node.z, max_z)
 

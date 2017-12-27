@@ -36,7 +36,7 @@ class TqecEvaluator:
         min_x = min_y = min_z = math.inf
         max_x = max_y = max_z = -math.inf
         for node in self._graph.node_list:
-            if node.type is "primal":
+            if node.type == "primal":
                 min_x, min_y, min_z = min(node.x, min_x), min(node.y, min_y), min(node.z, min_z)
                 max_x, max_y, max_z = max(node.x, max_x), max(node.y, max_y), max(node.z, max_z)
 
@@ -62,7 +62,7 @@ class TqecEvaluator:
         height = (max_y - min_y) / 2 + 1
         depth = (max_z - min_z) / 2 + 1
 
-        return width * height * depth
+        return width + height + depth
 
     @staticmethod
     def __evaluate_wiring_distance(edge_list):
@@ -70,19 +70,12 @@ class TqecEvaluator:
         max_x = max_y = max_z = -math.inf
         for edge in edge_list:
             node1, node2 = edge.node1, edge.node2
-            min_x = min(node1.x, min_x)
-            min_y = min(node1.y, min_y)
-            min_z = min(node1.z, min_z)
-            max_x = max(node1.x, max_x)
-            max_y = max(node1.y, max_y)
-            max_z = max(node1.z, max_z)
-
-            min_x = min(node2.x, min_x)
-            min_y = min(node2.y, min_y)
-            min_z = min(node2.z, min_z)
-            max_x = max(node2.x, max_x)
-            max_y = max(node2.y, max_y)
-            max_z = max(node2.z, max_z)
+            min_x = min(node1.x, node2.x, min_x)
+            min_y = min(node1.y, node2.y, min_y)
+            min_z = min(node1.z, node2.z, min_z)
+            max_x = max(node1.x, node2.x, max_x)
+            max_y = max(node1.y, node2.y, max_y)
+            max_z = max(node1.z, node2.z, max_z)
 
         point = (max_x - min_x) + (max_y - min_y) + (max_z - min_z)
 
