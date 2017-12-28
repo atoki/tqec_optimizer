@@ -21,7 +21,7 @@ class ModuleFactory:
         return self._module, self._joint_pair_list
 
     def __create_frame(self):
-        cross_edge_num = len(self._loop.cross_list)
+        cross_edge_num = max(1, len(self._loop.cross_list))
         node_array = []
         pos = Position(0, 0, 0)
 

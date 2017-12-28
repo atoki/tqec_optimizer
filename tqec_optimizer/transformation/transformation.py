@@ -25,11 +25,11 @@ class Transformation:
     def execute(self):
         reduction = True
         no = 1
-        print("-- rule1 --")
+        print("-- rule3 --")
         while reduction:
             print("-step{}".format(no))
             for loop in self._loop_list:
-                reduction = self.__rule1(loop)
+                reduction = self.__rule3(loop)
                 if reduction:
                     no += 1
                     break
@@ -41,6 +41,17 @@ class Transformation:
             print("-step{}".format(no))
             for loop in self._loop_list:
                 reduction = self.__rule2(loop)
+                if reduction:
+                    no += 1
+                    break
+
+        reduction = True
+        no = 1
+        print("-- rule1 --")
+        while reduction:
+            print("-step{}".format(no))
+            for loop in self._loop_list:
+                reduction = self.__rule1(loop)
                 if reduction:
                     no += 1
                     break
@@ -114,7 +125,52 @@ class Transformation:
         return True
 
     def __rule3(self, loop):
-        pass
+        """
+        変形規則3
+        """
+        if len(loop.cross_list) != 3 or len(loop.injector_list) != 0:
+            return False
+
+        """
+        loop1がloop2, loop3, loop4...と交差していると仮定
+        1. loop1に交差してinjectorを含まないloop2を見つける
+        2. loop2に交差したloopsをloop3, loop4...と公差させる
+        3. loop1, loop2を削除
+        """
+        # loop1に交差してinjectorを含まないloop2を見つける
+        cross_loop_list = []
+        delete_loop = None
+        for cross_loop_id in loop.cross_list:
+            cross_loop = self.__loop(cross_loop_id)
+            cross_loop_list.append(cross_loop)
+            if len(cross_loop.injector_list) == 0:
+                delete_loop = cross_loop
+
+        # loop2が見つからなかった
+        if delete_loop is None:
+            return False
+
+        # loop1と公差しているloopからloop1の公差情報を削除
+        for cross_loop in cross_loop_list:
+            cross_loop.remove_cross(loop.id)
+
+        # loop2に交差したshift_loopsをloop3, loop4...と公差させる
+        for shift_id in delete_loop.cross_list:
+            if shift_id == loop.id:
+                continue
+            shift_loop = self.__loop(shift_id)
+            shift_loop.remove_cross(delete_loop.id)
+            for cross_loop in cross_loop_list:
+                if cross_loop.id == delete_loop.id:
+                    continue
+                cross_loop.add_cross(shift_id)
+                shift_loop.add_cross(cross_loop.id)
+
+        # loop1, loop2を削除
+        self.__delete_loop(loop.id)
+        self.__delete_loop(delete_loop.id)
+
+        return True
 
     def __connect_loop(self, loop1, loop2):
         """

@@ -66,7 +66,9 @@ class Loop:
         self._edge_list.append(edge)
 
     def add_cross(self, cross_loop_id):
-        if cross_loop_id not in self._cross_list:
+        if cross_loop_id in self._cross_list:
+            self._cross_list.remove(cross_loop_id)
+        else:
             self._cross_list.append(cross_loop_id)
 
     def add_injector(self, injector):
