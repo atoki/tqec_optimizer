@@ -128,7 +128,7 @@ class Transformation:
         """
         変形規則3
         """
-        if len(loop.cross_list) != 3 or len(loop.injector_list) != 0:
+        if len(loop.cross_list) < 3 or len(loop.injector_list) != 0:
             return False
 
         """
