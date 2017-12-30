@@ -94,10 +94,11 @@ class Node:
 class Joint(Node):
     def __init__(self, x, y, z, id_=0, type_="none"):
         super().__init__(x, y, z, id_, type_)
-        self._target_node = None
+        self._id_set = set()
 
-    def set_target_node(self, target_node):
-        self._target_node = target_node
+    def set_id_set(self, id_set):
+        self._id_set = id_set
 
-    def target_node(self):
-        return self._target_node
+    @property
+    def id_set(self):
+        return self._id_set

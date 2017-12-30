@@ -21,14 +21,14 @@ class TqecEvaluator:
             node_list = []
             edge_map = defaultdict(list)
             for module_ in self._module_list:
-                for edge in module_.edge_list:
+                for edge in module_.frame_edge_list:
                     node_list.append(edge.node1)
                     node_list.append(edge.node2)
                 for edge in module_.cross_edge_list:
                     edge_map[edge.id].append(edge)
 
-            for id_, edge_list in edge_map.items():
-                point += self.__evaluate_wiring_distance(edge_list)
+            # for id_, edge_list in edge_map.items():
+            #     point += self.__evaluate_wiring_distance(edge_list)
 
             point *= self._alpha
             point += self._beta * self.__evaluate_convex_hull(node_list)

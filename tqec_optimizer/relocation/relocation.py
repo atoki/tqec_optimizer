@@ -1,12 +1,13 @@
 import random
 import math
+import time
 from collections import defaultdict
 
+from .module_factory import ModuleFactory
 from .sequence_triple import SequenceTriple
 from .tsp import TSP
 from .routing import Routing
 from .tqec_evaluator import TqecEvaluator
-from .module_factory import ModuleFactory
 
 from ..position import Position
 from ..graph import Graph
@@ -50,21 +51,19 @@ class Relocation:
         :param type_ primal or dual モジュールを作る基準
         """
         initial_t = 100
-        final_t = 0.01
-        cool_rate = 0.99
+        final_t = 0.1
+        cool_rate = 0.9
         limit = 100
 
         module_list, joint_pair_list = [], []
         for loop in self._loop_list:
             if loop.type != type_:
                 continue
-            module_, joint_pair = ModuleFactory(type_, loop).create()
+            module_ = ModuleFactory(type_, loop).create()
             module_list.append(module_)
-            joint_pair_list.extend(joint_pair)
 
         new_pos = Position(0, 0, 0)
         for module_ in module_list:
-            new_pos.debug()
             module_.set_position(Position(new_pos.x, new_pos.y, new_pos.z), True)
             new_pos.incz(module_.depth)
 
@@ -73,137 +72,50 @@ class Relocation:
 
         current_cost = TqecEvaluator(module_list).evaluate()
         place = SequenceTriple(module_list)
-        p1, p2, p3 = place.build_permutation()
+        place.build_permutation()
         t = initial_t
-        init = True
+        start = time.time()
+        # TODO: モジュール配置に無効条件を通過するバグの修正
         while t > final_t:
             if t % 10 < 1.0:
                 print(t)
             for n in range(limit):
-                np1, np2, np3 = self.__create_neighborhood(type_, module_list, p1, p2, p3, init)
-                if np1 is None:
+                place.create_neighborhood()
+                module_list = place.recalculate_coordinate()
+
+                if not self.__is_validate(module_list):
+                    place.recover()
                     continue
 
                 new_cost = TqecEvaluator(module_list).evaluate()
 
-                if init and self.__is_validate(module_list):
-                    p1, p2, p3 = np1, np2, np3
-                    t = initial_t
-                    init = False
-
                 if self.__should_change(new_cost - current_cost, t):
                     current_cost = new_cost
-                    p1, p2, p3 = np1, np2, np3
+                    place.apply()
                 else:
-                    module_list = SequenceTriple(p1, (p1, p2, p3)).recalculate_coordinate()
+                    place.recover()
             t *= cool_rate
 
+        elapsed_time = time.time() - start
+        print("処理時間: {}".format(elapsed_time))
+
+        if not self.__is_validate(module_list):
+            print("False")
+            for m in module_list:
+                m.debug()
+            print("")
+            for m in module_list:
+                print("--")
+                for node in m.frame_node_list + m.cross_node_list:
+                    node.debug()
+
+        self.__color_cross_edge(module_list)
         graph = self.__to_graph(module_list)
         CircuitWriter(graph).write("4-relocation.json")
-        route_pair = TSP(graph, module_list, joint_pair_list).search()
+        route_pair = TSP(graph, module_list).search()
         Routing(graph, module_list, route_pair).execute()
 
         return graph
-
-    def __create_neighborhood(self, type_, module_list, p1, p2, p3, init):
-        """
-        SA用の近傍を生成する
-        1. swap近傍
-        2. shift近傍
-        3. rotate近傍
-        以上の3つを等確率で一つ採用
-
-        :param type_ dual or primal
-        :param module_list モジュールの集合
-        :param p1 順列1
-        :param p2 順列2
-        :param p3 順列3
-        :param init 初期配置が決定していればTrue, そうでなければFalse
-        """
-        np1, np2, np3 = p1[:], p2[:], p3[:]
-
-        strategy = random.randint(1, 3)
-        # swap
-        index, rotate = 0, None
-        if strategy == 1:
-            self.__swap(np1, np2, np3)
-        elif strategy == 2:
-            self.__shift(np1, np2, np3)
-        else:
-            index, rotate = self.__rotate(np1, np2, np3)
-
-        module_list = SequenceTriple(np1, (np1, np2, np3)).recalculate_coordinate()
-
-        if init or self.__is_validate(module_list):
-            return np1, np2, np3
-
-        module_list = SequenceTriple(p1, (p1, p2, p3)).recalculate_coordinate()
-        if rotate is not None:
-            p1[index].rotate(rotate)
-            p1[index].rotate(rotate)
-            p1[index].rotate(rotate)
-
-        return None, None, None
-
-    @staticmethod
-    def __swap(p1, p2, p3):
-        size = len(p1)
-        s1 = random.randint(0, size - 1)
-        s2 = random.randint(0, size - 1)
-
-        module1, module2 = p1[s1], p1[s2]
-        p1_index1, p1_index2 = p1.index(module1), p1.index(module2)
-        p2_index1, p2_index2 = p2.index(module1), p2.index(module2)
-        p3_index1, p3_index2 = p3.index(module1), p3.index(module2)
-
-        # permutation swap
-        p1[p1_index1], p1[p1_index2] = p1[p1_index2], p1[p1_index1]
-        p2[p2_index1], p2[p2_index2] = p2[p2_index2], p2[p2_index1]
-        p3[p3_index1], p3[p3_index2] = p3[p3_index2], p3[p3_index1]
-
-    @staticmethod
-    def __shift(p1, p2, p3):
-        size = len(p1)
-        index = random.randint(0, size - 1)
-        shift_size1 = random.randint(0, size - 1)
-        shift_size2 = random.randint(0, size - 1)
-        pair = random.randint(1, 3)
-
-        module_ = p1[index]
-        if pair == 1:
-            p1_index, p2_index = p1.index(module_), p2.index(module_)
-            p1_module, p2_module = p1.pop(p1_index), p2.pop(p2_index)
-            p1.insert(p1_index + shift_size1, p1_module)
-            p2.insert(p2_index + shift_size2, p2_module)
-        elif pair == 2:
-            p1_index, p3_index = p1.index(module_), p3.index(module_)
-            p1_module, p3_module = p1.pop(p1_index), p3.pop(p3_index)
-            p1.insert(p1_index + shift_size1, p1_module)
-            p3.insert(p3_index + shift_size2, p3_module)
-        else:
-            p2_index, p3_index = p2.index(module_), p3.index(module_)
-            p2_module, p3_module = p2.pop(p2_index), p3.pop(p3_index)
-            p2.insert(p2_index + shift_size1, p2_module)
-            p3.insert(p3_index + shift_size2, p3_module)
-
-    @staticmethod
-    def __rotate(p1, p2, p3):
-        size = len(p1)
-        index = random.randint(0, size - 1)
-        axis = random.randint(1, 3)
-        rotate_module = p1[index]
-
-        if axis == 1:
-            if rotate_module.rotate('X'):
-                return index, 'X'
-        elif axis == 2:
-            if rotate_module.rotate('Y'):
-                return index, 'Y'
-        else:
-            if rotate_module.rotate('Z'):
-                return index, 'Z'
-
-        return index, None
 
     @staticmethod
     def __should_change(delta, t):
@@ -217,18 +129,12 @@ class Relocation:
     def __is_validate(module_list):
         used_node = {}
         for module_ in module_list:
-            for edge in module_.cross_edge_list:
-                node1, node2 = edge.node1, edge.node2
-                if node1 in used_node:
-                    if edge.id != used_node[node1]:
+            for node in module_.cross_node_list:
+                if node in used_node:
+                    if node.id != used_node[node]:
                         return False
-                if node2 in used_node:
-                    if edge.id != used_node[node2]:
-                        return False
-                if node1 not in used_node:
-                    used_node[node1] = edge.id
-                if node2 not in used_node:
-                    used_node[node2] = edge.id
+                if node not in used_node:
+                    used_node[node] = node.id
 
         return True
 
@@ -242,7 +148,7 @@ class Relocation:
         graph.set_loop_count(self._graph.loop_count)
         added_node = {}
         for module_ in module_list:
-            for edge in module_.edge_list + module_.cross_edge_list:
+            for edge in module_.frame_edge_list + module_.cross_edge_list:
                 color = edge.color
                 node1 = added_node[edge.node1] if edge.node1 in added_node else edge.node1
                 node2 = added_node[edge.node2] if edge.node2 in added_node else edge.node2
