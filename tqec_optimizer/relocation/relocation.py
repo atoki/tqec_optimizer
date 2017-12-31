@@ -47,7 +47,6 @@ class Relocation:
     def __sa_relocation(self, type_):
         """
         Simulated Annealingによる再配置を行う
-
         :param type_ primal or dual モジュールを作る基準
         """
         initial_t = 100
@@ -55,7 +54,7 @@ class Relocation:
         cool_rate = 0.9
         limit = 100
 
-        module_list, joint_pair_list = [], []
+        module_list = []
         for loop in self._loop_list:
             if loop.type != type_:
                 continue
@@ -72,50 +71,139 @@ class Relocation:
 
         current_cost = TqecEvaluator(module_list).evaluate()
         place = SequenceTriple(module_list)
-        place.build_permutation()
+        p1, p2, p3 = place.build_permutation()
         t = initial_t
+        init = True
         start = time.time()
-        # TODO: モジュール配置に無効条件を通過するバグの修正
         while t > final_t:
             if t % 10 < 1.0:
                 print(t)
             for n in range(limit):
-                place.create_neighborhood()
-                module_list = place.recalculate_coordinate()
-
-                if not self.__is_validate(module_list):
-                    place.recover()
+                np1, np2, np3 = self.__create_neighborhood(module_list, p1, p2, p3, init)
+                if np1 is None:
                     continue
 
                 new_cost = TqecEvaluator(module_list).evaluate()
 
+                if init and self.__is_validate(module_list):
+                    p1, p2, p3 = np1, np2, np3
+                    t = initial_t
+                    init = False
+
                 if self.__should_change(new_cost - current_cost, t):
                     current_cost = new_cost
-                    place.apply()
+                    p1, p2, p3 = np1, np2, np3
                 else:
-                    place.recover()
+                    module_list = SequenceTriple(p1, (p1, p2, p3)).recalculate_coordinate()
             t *= cool_rate
 
         elapsed_time = time.time() - start
         print("処理時間: {}".format(elapsed_time))
 
-        if not self.__is_validate(module_list):
-            print("False")
-            for m in module_list:
-                m.debug()
-            print("")
-            for m in module_list:
-                print("--")
-                for node in m.frame_node_list + m.cross_node_list:
-                    node.debug()
-
-        self.__color_cross_edge(module_list)
         graph = self.__to_graph(module_list)
         CircuitWriter(graph).write("4-relocation.json")
         route_pair = TSP(graph, module_list).search()
         Routing(graph, module_list, route_pair).execute()
 
         return graph
+
+    def __create_neighborhood(self, module_list, p1, p2, p3, init):
+        """
+        SA用の近傍を生成する
+        1. swap近傍
+        2. shift近傍
+        3. rotate近傍
+        以上の3つを等確率で一つ採用
+        :param module_list モジュールの集合
+        :param p1 順列1
+        :param p2 順列2
+        :param p3 順列3
+        :param init 初期配置が決定していればTrue, そうでなければFalse
+        """
+        np1, np2, np3 = p1[:], p2[:], p3[:]
+
+        strategy = random.randint(1, 3)
+        # swap
+        index, rotate = 0, None
+        if strategy == 1:
+            self.__swap(np1, np2, np3)
+        elif strategy == 2:
+            self.__shift(np1, np2, np3)
+        else:
+            index, rotate = self.__rotate(np1)
+
+        module_list = SequenceTriple(np1, (np1, np2, np3)).recalculate_coordinate()
+
+        if init or self.__is_validate(module_list):
+            return np1, np2, np3
+
+        module_list = SequenceTriple(p1, (p1, p2, p3)).recalculate_coordinate()
+        if rotate is not None:
+            p1[index].rotate(rotate)
+            p1[index].rotate(rotate)
+            p1[index].rotate(rotate)
+
+        return None, None, None
+
+    @staticmethod
+    def __swap(p1, p2, p3):
+        size = len(p1)
+        s1 = random.randint(0, size - 1)
+        s2 = random.randint(0, size - 1)
+
+        module1, module2 = p1[s1], p1[s2]
+        p1_index1, p1_index2 = p1.index(module1), p1.index(module2)
+        p2_index1, p2_index2 = p2.index(module1), p2.index(module2)
+        p3_index1, p3_index2 = p3.index(module1), p3.index(module2)
+
+        # permutation swap
+        p1[p1_index1], p1[p1_index2] = p1[p1_index2], p1[p1_index1]
+        p2[p2_index1], p2[p2_index2] = p2[p2_index2], p2[p2_index1]
+        p3[p3_index1], p3[p3_index2] = p3[p3_index2], p3[p3_index1]
+
+    @staticmethod
+    def __shift(p1, p2, p3):
+        size = len(p1)
+        index = random.randint(0, size - 1)
+        shift_size1 = random.randint(0, size - 1)
+        shift_size2 = random.randint(0, size - 1)
+        pair = random.randint(1, 3)
+
+        module_ = p1[index]
+        if pair == 1:
+            p1_index, p2_index = p1.index(module_), p2.index(module_)
+            p1_module, p2_module = p1.pop(p1_index), p2.pop(p2_index)
+            p1.insert(p1_index + shift_size1, p1_module)
+            p2.insert(p2_index + shift_size2, p2_module)
+        elif pair == 2:
+            p1_index, p3_index = p1.index(module_), p3.index(module_)
+            p1_module, p3_module = p1.pop(p1_index), p3.pop(p3_index)
+            p1.insert(p1_index + shift_size1, p1_module)
+            p3.insert(p3_index + shift_size2, p3_module)
+        else:
+            p2_index, p3_index = p2.index(module_), p3.index(module_)
+            p2_module, p3_module = p2.pop(p2_index), p3.pop(p3_index)
+            p2.insert(p2_index + shift_size1, p2_module)
+            p3.insert(p3_index + shift_size2, p3_module)
+
+    @staticmethod
+    def __rotate(p1):
+        size = len(p1)
+        index = random.randint(0, size - 1)
+        axis = random.randint(1, 3)
+        rotate_module = p1[index]
+
+        if axis == 1:
+            if rotate_module.rotate('X'):
+                return index, 'X'
+        elif axis == 2:
+            if rotate_module.rotate('Y'):
+                return index, 'Y'
+        else:
+            if rotate_module.rotate('Z'):
+                return index, 'Z'
+
+        return index, None
 
     @staticmethod
     def __should_change(delta, t):
