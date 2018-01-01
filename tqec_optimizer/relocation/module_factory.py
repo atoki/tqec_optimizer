@@ -2,7 +2,7 @@ from .module import Module
 
 from ..position import Position
 from ..node import Node, Joint
-from ..edge import Edge
+from ..edge import Edge, CrossEdge
 
 
 class ModuleFactory:
@@ -40,10 +40,10 @@ class ModuleFactory:
         last_node = None
         for node in node_array:
             if last_node is not None:
-                edge = self.__new__edge(node, last_node, "edge", self._loop.id)
+                edge = self.__new__edge("frame", node, last_node, "edge", self._loop.id)
                 self._module.add_frame_edge(edge)
             last_node = node
-        edge = self.__new__edge(node_array[0], last_node, "edge", self._loop.id)
+        edge = self.__new__edge("frame", node_array[0], last_node, "edge", self._loop.id)
         self._module.add_frame_edge(edge)
 
     def __create_cross_edge(self):
@@ -52,7 +52,7 @@ class ModuleFactory:
         for cross_edge_id in self._loop.cross_list:
             joint1 = self.__new_node("cross", pos1, type_, cross_edge_id, set(self._loop.cross_list))
             joint2 = self.__new_node("cross", pos2, type_, cross_edge_id, set(self._loop.cross_list))
-            cross_edge = self.__new__edge(joint1, joint2, "edge", cross_edge_id)
+            cross_edge = self.__new__edge("cross", joint1, joint2, "edge", cross_edge_id, self._loop.id)
             self._module.add_cross_edge(cross_edge)
             self._module.add_cross_id(cross_edge_id)
             self._module.add_joint_pair((joint1, joint2, cross_edge))
@@ -71,10 +71,15 @@ class ModuleFactory:
         return node
 
     @staticmethod
-    def __new__edge(node1, node2, category, id_=0):
-        edge = Edge(node1, node2, category, id_)
-        node1.add_edge(edge)
-        node2.add_edge(edge)
+    def __new__edge(class_, node1, node2, category, id_=0, module_id=0):
+        if class_ == "frame":
+            edge = Edge(node1, node2, category, id_)
+            node1.add_edge(edge)
+            node2.add_edge(edge)
+        else:
+            edge = CrossEdge(node1, node2, category, id_, module_id)
+            node1.add_edge(edge)
+            node2.add_edge(edge)
 
         return edge
 

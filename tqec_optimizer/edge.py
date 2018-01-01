@@ -115,3 +115,14 @@ class Edge:
         print("type: {} id: {} category: {} ({}, {}, {}) -> ({}, {}, {})".format(self._node1.type, self._category, self._id,
                                                                                  self._node1.x, self._node1.y, self._node1.z,
                                                                                  self._node2.x, self._node2.y, self._node2.z))
+
+
+class CrossEdge(Edge):
+    def __init__(self, node1, node2, category, id_, module_id):
+        super().__init__(node1, node2, category, id_)
+        self._module_id = module_id
+
+    @property
+    def module_id(self):
+        return self._module_id
+

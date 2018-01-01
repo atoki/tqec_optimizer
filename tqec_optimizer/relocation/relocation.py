@@ -54,6 +54,7 @@ class Relocation:
         cool_rate = 0.9
         limit = 100
 
+        # create module list
         module_list = []
         for loop in self._loop_list:
             if loop.type != type_:
@@ -61,10 +62,17 @@ class Relocation:
             module_ = ModuleFactory(type_, loop).create()
             module_list.append(module_)
 
+        # adjust position and create cross id set map
+        # cross_id_set[module.id] = {cross edge ids}
+        cross_id_set = {}
         new_pos = Position(0, 0, 0)
         for module_ in module_list:
+            # adjust position
             module_.set_position(Position(new_pos.x, new_pos.y, new_pos.z), True)
             new_pos.incz(module_.depth)
+
+            # create cross id map
+            cross_id_set[module_.id] = set(module_.cross_id_list)
 
         graph = self.__to_graph(module_list)
         CircuitWriter(graph).write("3-module.json")
@@ -73,26 +81,26 @@ class Relocation:
         place = SequenceTriple(module_list)
         p1, p2, p3 = place.build_permutation()
         t = initial_t
-        init = True
+        init = False
         start = time.time()
         while t > final_t:
             if t % 10 < 1.0:
                 print(t)
             for n in range(limit):
-                np1, np2, np3 = self.__create_neighborhood(module_list, p1, p2, p3, init)
+                np1, np2, np3 = self.__create_neighborhood(module_list, p1, p2, p3, init, cross_id_set)
                 if np1 is None:
                     continue
 
                 new_cost = TqecEvaluator(module_list).evaluate()
 
-                if init and self.__is_validate(module_list):
-                    p1, p2, p3 = np1, np2, np3
-                    t = initial_t
-                    init = False
+                # if init and self.__is_validate(module_list, cross_id_set):
+                #     p1, p2, p3 = np1, np2, np3
+                #     t = initial_t
+                #     init = False
 
                 if self.__should_change(new_cost - current_cost, t):
                     current_cost = new_cost
-                    p1, p2, p3 = np1, np2, np3
+                    p1, p2, p3 = np1[:], np2[:], np3[:]
                 else:
                     module_list = SequenceTriple(p1, (p1, p2, p3)).recalculate_coordinate()
             t *= cool_rate
@@ -100,6 +108,10 @@ class Relocation:
         elapsed_time = time.time() - start
         print("処理時間: {}".format(elapsed_time))
 
+        if self.__is_validate(module_list, cross_id_set, True):
+            print("Trueですよ")
+
+        self.__color_cross_edge(module_list)
         graph = self.__to_graph(module_list)
         CircuitWriter(graph).write("4-relocation.json")
         route_pair = TSP(graph, module_list).search()
@@ -107,7 +119,7 @@ class Relocation:
 
         return graph
 
-    def __create_neighborhood(self, module_list, p1, p2, p3, init):
+    def __create_neighborhood(self, module_list, p1, p2, p3, init, cross_id_set):
         """
         SA用の近傍を生成する
         1. swap近傍
@@ -134,7 +146,7 @@ class Relocation:
 
         module_list = SequenceTriple(np1, (np1, np2, np3)).recalculate_coordinate()
 
-        if init or self.__is_validate(module_list):
+        if init or self.__is_validate(module_list, cross_id_set):
             return np1, np2, np3
 
         module_list = SequenceTriple(p1, (p1, p2, p3)).recalculate_coordinate()
@@ -214,15 +226,65 @@ class Relocation:
         return 0
 
     @staticmethod
-    def __is_validate(module_list):
-        used_node = {}
+    def __is_validate(module_list, cross_id_set, debug=False):
+        if debug:
+            print("debug on")
+        edge_map = {}
+        connect_edge = defaultdict(list)
         for module_ in module_list:
-            for node in module_.cross_node_list:
-                if node in used_node:
-                    if node.id != used_node[node]:
-                        return False
-                if node not in used_node:
-                    used_node[node] = node.id
+            for joint_pair in module_.joint_pair_list:
+                joint1, joint2 = joint_pair[0], joint_pair[1]
+                edge = joint_pair[2]
+
+                if joint1 in edge_map and joint2 in edge_map:
+                    for edge in connect_edge[edge_map[joint2]]:
+                        node1, node2 = edge.node1, edge.node2
+                        edge_map[node1] = edge_map[joint1]
+                        edge_map[node2] = edge_map[joint1]
+                    connect_edge[edge_map[joint1]].extend(connect_edge[edge_map[joint2]])
+                    del connect_edge[edge_map[joint2]]
+
+                elif joint1 in edge_map:
+                    edge_map[joint2] = edge_map[joint1]
+                    connect_edge[edge_map[joint1]].append(edge)
+
+                elif joint2 in edge_map:
+                    edge_map[joint1] = edge_map[joint2]
+                    connect_edge[edge_map[joint2]].append(edge)
+
+                else:
+                    edge_map[joint1] = edge
+                    edge_map[joint2] = edge
+                    connect_edge[edge].append(edge)
+
+        id_set = dict(cross_id_set)
+        if debug:
+            print("--------------")
+            for key_edge, edge_list in sorted(connect_edge.items(), key=lambda x: len(x[1]), reverse=True):
+                print("--")
+                for edge in edge_list:
+                    edge.debug()
+                print("")
+        for key_edge, edge_list in sorted(connect_edge.items(), key=lambda x: len(x[1]), reverse=True):
+            if len(edge_list) == 1:
+                break
+            result = id_set[edge_list[0].module_id]
+            for edge in edge_list:
+                tmp = id_set[edge.module_id]
+                if debug:
+                    print("tmp: {}".format(tmp))
+                result = result & tmp
+
+            if debug:
+                print("result: {}".format(result))
+            if len(result) == 0:
+                if debug:
+                    print("False !!!!!!!!!!!!")
+                return False
+
+            del_num = result.pop()
+            for edge in edge_list:
+                id_set[edge.module_id].remove(del_num)
 
         return True
 
