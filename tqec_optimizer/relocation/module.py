@@ -1,6 +1,6 @@
 import math
 
-from ..position import Position
+from ..vector3d import Vector3D
 
 
 class Module:
@@ -20,8 +20,8 @@ class Module:
         self._cross_edge_list = []
         self._cross_id_list = set()
         self._joint_pair_list = []
-        self._pos = Position()
-        self._inner_pos = Position()
+        self._pos = Vector3D()
+        self._inner_pos = Vector3D()
         self._width = 0
         self._height = 0
         self._depth = 0
@@ -185,14 +185,14 @@ class Module:
         self._depth = max_z - min_z
 
     def rotate(self, axis):
-        center = Position(self.pos.x + (self.width / 2.0),
+        center = Vector3D(self.pos.x + (self.width / 2.0),
                           self.pos.y + (self.height / 2.0),
                           self.pos.z + (self.depth / 2.0))
 
         if axis == 'X':
             for node in self._frame_node_list + self._cross_node_list:
                 rel_x, rel_y, rel_z = node.x - center.x, node.y - center.y, node.z - center.z
-                relative_pos = Position(rel_x, rel_y, rel_z)
+                relative_pos = Vector3D(rel_x, rel_y, rel_z)
                 relative_pos.set(rel_x, -rel_z, rel_y)
                 if self.__invalidate_rotate(rel_x, relative_pos.x):
                     return False
@@ -201,7 +201,7 @@ class Module:
         elif axis == 'Y':
             for node in self._frame_node_list + self._cross_node_list:
                 rel_x, rel_y, rel_z = node.x - center.x, node.y - center.y, node.z - center.z
-                relative_pos = Position(rel_x, rel_y, rel_z)
+                relative_pos = Vector3D(rel_x, rel_y, rel_z)
                 relative_pos.set(rel_z, rel_y, -rel_x)
                 if self.__invalidate_rotate(rel_x, relative_pos.x):
                     return False
@@ -210,7 +210,7 @@ class Module:
         else:
             for node in self._frame_node_list + self._cross_node_list:
                 rel_x, rel_y, rel_z = node.x - center.x, node.y - center.y, node.z - center.z
-                relative_pos = Position(rel_x, rel_y, rel_z)
+                relative_pos = Vector3D(rel_x, rel_y, rel_z)
                 relative_pos.set(-rel_y, rel_x, rel_z)
                 if self.__invalidate_rotate(rel_x, relative_pos.x):
                     return False

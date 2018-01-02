@@ -1,6 +1,6 @@
 import random
 
-from ..position import Position
+from ..vector3d import Vector3D
 
 
 class SequenceTriple:
@@ -25,7 +25,7 @@ class SequenceTriple:
     def result(self):
         self._placed = [False for no in range(0, 100)]
         for id_ in self._permutation3:
-            new_pos = Position(self.__find_x(id_, self._permutation2),
+            new_pos = Vector3D(self.__find_x(id_, self._permutation2),
                                self.__find_y(id_, self._permutation1, self._permutation2),
                                self.__find_z(id_, self._permutation1, self._permutation2))
             self._module_map[id_].set_position(new_pos, True)
@@ -76,7 +76,7 @@ class SequenceTriple:
     def recalculate_coordinate(self):
         self._placed = [False for no in range(0, 100)]
         for id_ in self._candidate_permutation3:
-            new_pos = Position(self.__find_x(id_, self._candidate_permutation2),
+            new_pos = Vector3D(self.__find_x(id_, self._candidate_permutation2),
                                self.__find_y(id_, self._candidate_permutation1, self._candidate_permutation2),
                                self.__find_z(id_, self._candidate_permutation1, self._candidate_permutation2))
             self._module_map[id_].set_position(new_pos, True)

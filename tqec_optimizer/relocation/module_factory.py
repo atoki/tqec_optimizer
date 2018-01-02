@@ -1,6 +1,6 @@
 from .module import Module
 
-from ..position import Position
+from ..vector3d import Vector3D
 from ..node import Node, Joint
 from ..edge import Edge, CrossEdge
 
@@ -21,7 +21,7 @@ class ModuleFactory:
     def __create_frame(self):
         cross_edge_num = max(1, len(self._loop.cross_list))
         node_array = []
-        pos = Position(0, 0, 0)
+        pos = Vector3D(0, 0, 0)
 
         # create frame node
         node_array.append(self.__new_node("frame", pos))
@@ -48,7 +48,7 @@ class ModuleFactory:
 
     def __create_cross_edge(self):
         type_ = "dual" if self._type == "primal" else "primal"
-        pos1, pos2 = Position(1, 1, 1), Position(-1, 1, 1)
+        pos1, pos2 = Vector3D(1, 1, 1), Vector3D(-1, 1, 1)
         for cross_edge_id in self._loop.cross_list:
             joint1 = self.__new_node("cross", pos1, type_, cross_edge_id, set(self._loop.cross_list))
             joint2 = self.__new_node("cross", pos2, type_, cross_edge_id, set(self._loop.cross_list))

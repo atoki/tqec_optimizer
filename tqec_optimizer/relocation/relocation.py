@@ -12,7 +12,7 @@ from .tsp import TSP
 from .routing import Routing
 from .tqec_evaluator import TqecEvaluator
 
-from ..position import Position
+from ..vector3d import Vector3D
 from ..graph import Graph
 from ..node import Node, Joint
 from ..edge import Edge, CrossEdge
@@ -128,10 +128,10 @@ class Relocation:
          """
         # adjust position and create cross id set map
         # cross_id_set[module.id] = {cross edge ids}
-        new_pos = Position(0, 0, 0)
+        new_pos = Vector3D(0, 0, 0)
         for module_ in module_list:
             # adjust position
-            module_.set_position(Position(new_pos.x, new_pos.y, new_pos.z), True)
+            module_.set_position(Vector3D(new_pos.x, new_pos.y, new_pos.z), True)
             new_pos.incz(module_.depth)
 
     @staticmethod
@@ -276,8 +276,8 @@ class Relocation:
             # set size and pos
             module_.set_inner_size(m.inner_width, m.inner_height, m.inner_depth)
             module_.set_size(m.width, m.height, m.depth)
-            module_.set_inner_position(Position(m.inner_pos.x, m.inner_pos.y, m.inner_pos.z))
-            module_.set_position(Position(m.pos.x, m.pos.y, m.pos.z))
+            module_.set_inner_position(Vector3D(m.inner_pos.x, m.inner_pos.y, m.inner_pos.z))
+            module_.set_position(Vector3D(m.pos.x, m.pos.y, m.pos.z))
 
             result.append(module_)
 

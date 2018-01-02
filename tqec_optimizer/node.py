@@ -1,4 +1,4 @@
-from .position import Position
+from .vector3d import Vector3D
 
 
 class Node:
@@ -17,7 +17,7 @@ class Node:
         """
         self._id = id_
         self._type = type_
-        self._pos = Position(x, y, z)
+        self._pos = Vector3D(x, y, z)
         self._edge_list = []
         self._color = 0
 
