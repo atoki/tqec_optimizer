@@ -66,12 +66,20 @@ class Module:
         return self._inner_depth
 
     @property
+    def node_list(self):
+        return self._frame_node_list + self._cross_node_list
+
+    @property
     def frame_node_list(self):
         return self._frame_node_list
 
     @property
     def cross_node_list(self):
         return self._cross_node_list
+
+    @property
+    def edge_list(self):
+        return self._frame_edge_list + self._cross_edge_list
 
     @property
     def frame_edge_list(self):

@@ -7,6 +7,7 @@ from collections import defaultdict
 from .module import Module
 from .module_factory import ModuleFactory
 from .sequence_triple import SequenceTriple
+from .allocation import Allocation
 from .tsp import TSP
 from .routing import Routing
 from .tqec_evaluator import TqecEvaluator
@@ -41,7 +42,6 @@ class Relocation:
         Sequence-Tripleを用いたSAによる再配置を行う
         """
         graph = self.__sa_relocation(self._type)
-        CircuitWriter(graph).write("5-relocation.json")
         self.__add_injector(graph)
 
         return graph
@@ -99,7 +99,7 @@ class Relocation:
                 if self.__should_change(new_cost - current_cost, t):
                     current_cost = new_cost
                     place.apply()
-                    if t < 0.5:
+                    if t < 0.1:
                         result = self.__deep_copy_module_list(candidate)
                 else:
                     place.recover()
@@ -107,12 +107,23 @@ class Relocation:
 
         elapsed_time = time.time() - start
         print("処理時間: {}".format(elapsed_time))
+        print("relocation is completed")
 
         self.__color_cross_edge(result)
         graph = self.__to_graph(result)
         CircuitWriter(graph).write("4-relocation.json")
+
+        Allocation(result, cross_id_set).execute()
+        print("allocation is completed")
+        self.__color_cross_edge(result)
+        graph = self.__to_graph(result)
+        CircuitWriter(graph).write("5-allocation.json")
+
         route_pair = TSP(graph, result).search()
+        print("TSP is completed")
+
         Routing(graph, result, route_pair).execute()
+        print("routing is completed")
 
         return graph
 

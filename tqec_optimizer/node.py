@@ -33,6 +33,9 @@ class Node:
     def __eq__(self, other):
         return (self._pos.x, self._pos.y, self._pos.z) == (other.x, other.y, other.z)
 
+    def set_id(self, id_):
+        self._id = id_
+
     def set_type(self, type_):
         self._type = type_
 

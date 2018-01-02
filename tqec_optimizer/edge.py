@@ -121,8 +121,16 @@ class CrossEdge(Edge):
     def __init__(self, node1, node2, category, id_, module_id):
         super().__init__(node1, node2, category, id_)
         self._module_id = module_id
+        self._fix = False
 
     @property
     def module_id(self):
         return self._module_id
+
+    @property
+    def is_fixed(self):
+        return self._fix
+
+    def fix(self):
+        self._fix = True
 
