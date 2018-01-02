@@ -6,8 +6,6 @@ class TqecEvaluator:
         self._module_list = module_list
         self._graph = graph
         self._is_graph = is_graph
-        self._alpha = 0.1
-        self._beta = 1.0
 
     def evaluate(self):
         point = 0

@@ -27,7 +27,7 @@ class Relocation:
         self._type = type_
         self._loop_list = loop_list
         self._graph = graph
-        self._module_list = []
+        self._cross_id_set = {}
         self._joint_pair_list = []
         self._injector_list = defaultdict(list)
         self._var_node_count = 0
@@ -41,43 +41,52 @@ class Relocation:
         """
         Sequence-Tripleを用いたSAによる再配置を行う
         """
-        graph = self.__sa_relocation(self._type)
+        # create module list
+        module_list = []
+        for loop in self._loop_list:
+            if loop.type != self._type:
+                continue
+            module_ = ModuleFactory(self._type, loop).create()
+            module_list.append(module_)
+
+            # create cross id map
+            self._cross_id_set[module_.id] = set(module_.cross_id_list)
+
+        # 各モジュールの配置決定
+        result = self.__sa_relocation(module_list)
+        self.__color_cross_edge(result)
+        graph = self.__to_graph(result)
+        CircuitWriter(graph).write("4-relocation.json")
+
+        # 各辺に対するidの割当を決定
+        Allocation(result, self._cross_id_set).execute()
+        print("allocation is completed")
+        self.__color_cross_edge(result)
+        graph = self.__to_graph(result)
+        CircuitWriter(graph).write("5-allocation.json")
+
+        # 各辺の接合部の接続割当を決定
+        route_pair = TSP(graph, result).search()
+        print("TSP is completed")
+
+        # 各ネットの結ぶ経路の決定
+        Routing(graph, result, route_pair).execute()
+        print("routing is completed")
+
+        # injectorを復元
         self.__add_injector(graph)
 
         return graph
 
-    def __sa_relocation(self, type_):
+    def __sa_relocation(self, module_list):
         """
         Simulated Annealingによる再配置を行う
-        :param type_ primal or dual モジュールを作る基準
+        :param module_list Moduleの配列
         """
         initial_t = 100
         final_t = 0.01
         cool_rate = 0.99
         limit = 100
-
-        # create module list
-        module_list = []
-        for loop in self._loop_list:
-            if loop.type != type_:
-                continue
-            module_ = ModuleFactory(type_, loop).create()
-            module_list.append(module_)
-
-        # adjust position and create cross id set map
-        # cross_id_set[module.id] = {cross edge ids}
-        cross_id_set = {}
-        new_pos = Position(0, 0, 0)
-        for module_ in module_list:
-            # adjust position
-            module_.set_position(Position(new_pos.x, new_pos.y, new_pos.z), True)
-            new_pos.incz(module_.depth)
-
-            # create cross id map
-            cross_id_set[module_.id] = set(module_.cross_id_list)
-
-        graph = self.__to_graph(module_list)
-        CircuitWriter(graph).write("3-module.json")
 
         current_cost = TqecEvaluator(module_list).evaluate()
         place = SequenceTriple(module_list)
@@ -90,7 +99,7 @@ class Relocation:
                 place.create_neighborhood()
                 candidate = place.recalculate_coordinate()
 
-                if not self.__is_validate(candidate, cross_id_set):
+                if not self.__is_validate(candidate, self._cross_id_set):
                     place.recover()
                     continue
 
@@ -109,23 +118,21 @@ class Relocation:
         print("処理時間: {}".format(elapsed_time))
         print("relocation is completed")
 
-        self.__color_cross_edge(result)
-        graph = self.__to_graph(result)
-        CircuitWriter(graph).write("4-relocation.json")
+        return result
 
-        Allocation(result, cross_id_set).execute()
-        print("allocation is completed")
-        self.__color_cross_edge(result)
-        graph = self.__to_graph(result)
-        CircuitWriter(graph).write("5-allocation.json")
-
-        route_pair = TSP(graph, result).search()
-        print("TSP is completed")
-
-        Routing(graph, result, route_pair).execute()
-        print("routing is completed")
-
-        return graph
+    @staticmethod
+    def __create_initial_placement(module_list):
+        """
+         初期配置を生成する
+         :param module_list Moduleの配列
+         """
+        # adjust position and create cross id set map
+        # cross_id_set[module.id] = {cross edge ids}
+        new_pos = Position(0, 0, 0)
+        for module_ in module_list:
+            # adjust position
+            module_.set_position(Position(new_pos.x, new_pos.y, new_pos.z), True)
+            new_pos.incz(module_.depth)
 
     @staticmethod
     def __should_change(delta, t):

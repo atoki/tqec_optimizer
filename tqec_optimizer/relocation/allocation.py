@@ -5,6 +5,8 @@ class Allocation:
     def __init__(self, module_list, id_set):
         self._module_list = module_list
         self._id_set = id_set
+        self._edge_map = {}
+        self._connect_edge = defaultdict(list)
 
         # init
         for module_ in self._module_list:
@@ -14,43 +16,43 @@ class Allocation:
                 edge.node2.set_id(0)
 
     def execute(self):
+        self.__detect_connect_edge()
         self.__assign_connect_edge()
         self.__assign_isolated_edge()
 
-    def __assign_connect_edge(self):
-        edge_map = {}
-        connect_edge = defaultdict(list)
+    def __detect_connect_edge(self):
         for module_ in self._module_list:
             for joint_pair in module_.joint_pair_list:
                 joint1, joint2 = joint_pair[0], joint_pair[1]
                 edge = joint_pair[2]
 
-                if joint1 in edge_map and joint2 in edge_map:
-                    connect_edge[edge_map[joint1]].extend(connect_edge[edge_map[joint2]])
-                    connect_edge[edge_map[joint1]].append(edge)
-                    del_edge = edge_map[joint2]
+                if joint1 in self._edge_map and joint2 in self._edge_map:
+                    self._connect_edge[self._edge_map[joint1]].extend(self._connect_edge[self._edge_map[joint2]])
+                    self._connect_edge[self._edge_map[joint1]].append(edge)
+                    del_edge = self._edge_map[joint2]
 
-                    for edge in connect_edge[edge_map[joint2]]:
+                    for edge in self._connect_edge[self._edge_map[joint2]]:
                         node1, node2 = edge.node1, edge.node2
-                        edge_map[node1] = edge_map[joint1]
-                        edge_map[node2] = edge_map[joint1]
+                        self._edge_map[node1] = self._edge_map[joint1]
+                        self._edge_map[node2] = self._edge_map[joint1]
 
-                    del connect_edge[del_edge]
+                    del self._connect_edge[del_edge]
 
-                elif joint1 in edge_map:
-                    edge_map[joint2] = edge_map[joint1]
-                    connect_edge[edge_map[joint1]].append(edge)
+                elif joint1 in self._edge_map:
+                    self._edge_map[joint2] = self._edge_map[joint1]
+                    self._connect_edge[self._edge_map[joint1]].append(edge)
 
-                elif joint2 in edge_map:
-                    edge_map[joint1] = edge_map[joint2]
-                    connect_edge[edge_map[joint2]].append(edge)
+                elif joint2 in self._edge_map:
+                    self._edge_map[joint1] = self._edge_map[joint2]
+                    self._connect_edge[self._edge_map[joint2]].append(edge)
 
                 else:
-                    edge_map[joint1] = edge
-                    edge_map[joint2] = edge
-                    connect_edge[edge].append(edge)
+                    self._edge_map[joint1] = edge
+                    self._edge_map[joint2] = edge
+                    self._connect_edge[edge].append(edge)
 
-        for key_edge, edge_list in sorted(connect_edge.items(), key=lambda x: len(x[1]), reverse=True):
+    def __assign_connect_edge(self):
+        for key_edge, edge_list in sorted(self._connect_edge.items(), key=lambda x: len(x[1]), reverse=True):
             if len(edge_list) == 1:
                 break
 
