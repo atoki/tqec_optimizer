@@ -1,8 +1,10 @@
 import random
 import math
 import time
+import copy
 from collections import defaultdict
 
+from .module import Module
 from .module_factory import ModuleFactory
 from .sequence_triple import SequenceTriple
 from .tsp import TSP
@@ -11,8 +13,8 @@ from .tqec_evaluator import TqecEvaluator
 
 from ..position import Position
 from ..graph import Graph
-from ..node import Node
-from ..edge import Edge
+from ..node import Node, Joint
+from ..edge import Edge, CrossEdge
 from ..circuit_writer import CircuitWriter
 
 
@@ -50,8 +52,8 @@ class Relocation:
         :param type_ primal or dual モジュールを作る基準
         """
         initial_t = 100
-        final_t = 0.1
-        cool_rate = 0.9
+        final_t = 0.01
+        cool_rate = 0.99
         limit = 100
 
         # create module list
@@ -82,8 +84,8 @@ class Relocation:
         place.build_permutation()
         t = initial_t
         start = time.time()
+        result = None
         while t > final_t:
-            print(t)
             for n in range(limit):
                 place.create_neighborhood()
                 candidate = place.recalculate_coordinate()
@@ -97,6 +99,8 @@ class Relocation:
                 if self.__should_change(new_cost - current_cost, t):
                     current_cost = new_cost
                     place.apply()
+                    if t < 0.5:
+                        result = self.__deep_copy_module_list(candidate)
                 else:
                     place.recover()
             t *= cool_rate
@@ -104,7 +108,6 @@ class Relocation:
         elapsed_time = time.time() - start
         print("処理時間: {}".format(elapsed_time))
 
-        result = place.result()
         self.__color_cross_edge(result)
         graph = self.__to_graph(result)
         CircuitWriter(graph).write("4-relocation.json")
@@ -155,7 +158,7 @@ class Relocation:
                     edge_map[joint2] = edge
                     connect_edge[edge].append(edge)
 
-        id_set = dict(cross_id_set)
+        id_set = copy.deepcopy(cross_id_set)
         for key_edge, edge_list in sorted(connect_edge.items(), key=lambda x: len(x[1]), reverse=True):
             if len(edge_list) == 1:
                 break
@@ -215,6 +218,52 @@ class Relocation:
                         if edge.z == candidate_edge.z and edge.x < candidate_edge.x:
                             candidate_edge = edge
                 candidate_edge.set_category(category)
+
+    @staticmethod
+    def __deep_copy_module_list(module_list):
+        result = []
+        for m in module_list:
+            module_ = Module(m.id)
+
+            # set frame edge
+            first = True
+            first_node = None
+            last_node = None
+            for node in m.frame_node_list:
+                n = Node(node.x, node.y, node.z, node.id, node.type)
+                if first:
+                    first_node = n
+                    first = False
+                if last_node is not None:
+                    edge = Edge(n, last_node, "edge", n.id)
+                    module_.add_frame_edge(edge)
+                last_node = n
+            edge = Edge(first_node, last_node, "edge", first_node.id)
+            module_.add_frame_edge(edge)
+
+            # set cross edge
+            for joint_pair in m.joint_pair_list:
+                joint1 = Joint(joint_pair[0].x, joint_pair[0].y, joint_pair[0].z, joint_pair[0].id, joint_pair[0].type)
+                joint2 = Joint(joint_pair[1].x, joint_pair[1].y, joint_pair[1].z, joint_pair[1].id, joint_pair[1].type)
+                cross_edge = CrossEdge(joint1, joint2, "edge", joint_pair[2].id, joint_pair[2].module_id)
+                module_.add_cross_node(joint1)
+                module_.add_cross_node(joint2)
+                module_.add_cross_edge(cross_edge)
+                module_.add_joint_pair((joint1, joint2, cross_edge))
+
+            # set id set
+            for id_ in m.cross_id_list:
+                m.add_cross_id(id_)
+
+            # set size and pos
+            module_.set_inner_size(m.inner_width, m.inner_height, m.inner_depth)
+            module_.set_size(m.width, m.height, m.depth)
+            module_.set_inner_position(Position(m.inner_pos.x, m.inner_pos.y, m.inner_pos.z))
+            module_.set_position(Position(m.pos.x, m.pos.y, m.pos.z))
+
+            result.append(module_)
+
+        return result
 
     @staticmethod
     def __new__node(node):
