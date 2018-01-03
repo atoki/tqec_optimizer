@@ -60,7 +60,7 @@ def main():
 
     # optimization of topology
     graph = Relocation(type_, loop_list, graph).execute()
-    print("relocation cost: {}".format(evaluate(graph)))
+    print("result cost: {}".format(evaluate(graph)))
 
     # output
     CircuitWriter(graph).write(output_file)

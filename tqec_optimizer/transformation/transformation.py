@@ -25,9 +25,7 @@ class Transformation:
     def execute(self):
         reduction = True
         no = 1
-        print("-- rule3 --")
         while reduction:
-            print("-step{}".format(no))
             for loop in self._loop_list:
                 reduction = self.__rule3(loop)
                 if reduction:
@@ -36,9 +34,7 @@ class Transformation:
 
         reduction = True
         no = 1
-        print("-- rule2 --")
         while reduction:
-            print("-step{}".format(no))
             for loop in self._loop_list:
                 reduction = self.__rule2(loop)
                 if reduction:
@@ -47,15 +43,14 @@ class Transformation:
 
         reduction = True
         no = 1
-        print("-- rule1 --")
         while reduction:
-            print("-step{}".format(no))
             for loop in self._loop_list:
                 reduction = self.__rule1(loop)
                 if reduction:
                     no += 1
                     break
 
+        print("non topological deforming is completed")
         return self._loop_list
 
     def __create_loop(self):

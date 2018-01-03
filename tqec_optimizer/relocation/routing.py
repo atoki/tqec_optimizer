@@ -50,7 +50,6 @@ class Routing:
         count, limit = 0, 100
         while update:
             count += 1
-            print("loop: {}".format(count))
             for index, (src, dst) in enumerate(self._route_pair.items(), start=1):
                 self.__clear(index, routes)
                 route = BestFirstSearch(src, dst,
@@ -62,6 +61,7 @@ class Routing:
                 routes[index] = route
             update = self.__check()
             if count == limit:
+                print("routing failed")
                 break
 
         self.__create_route(routes)
