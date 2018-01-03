@@ -42,18 +42,12 @@ class Relocation:
         Sequence-Tripleを用いたSAによる再配置を行う
         """
         # create module list
-        module_list = []
-        for loop in self._loop_list:
-            if loop.type != self._type:
-                continue
-            module_ = ModuleFactory(self._type, loop).create()
-            module_list.append(module_)
-
-            # create cross id map
-            self._cross_id_set[module_.id] = set(module_.cross_id_list)
+        module_list = [ModuleFactory(self._type, loop).create() for loop in self._loop_list if loop.type == self._type]
+        self._cross_id_set = {module_.id: set(module_.cross_id_list) for module_ in module_list}
 
         # 各モジュールの配置決定
         result = self.__sa_relocation(module_list)
+
         self.__color_cross_edge(result)
         graph = self.__to_graph(result)
         CircuitWriter(graph).write("4-relocation.json")
@@ -108,7 +102,7 @@ class Relocation:
                 if self.__should_change(new_cost - current_cost, t):
                     current_cost = new_cost
                     place.apply()
-                    if t < 0.1:
+                    if t < 1.0:
                         result = self.__deep_copy_module_list(candidate)
                 else:
                     place.recover()
@@ -127,7 +121,6 @@ class Relocation:
          :param module_list Moduleの配列
          """
         # adjust position and create cross id set map
-        # cross_id_set[module.id] = {cross edge ids}
         new_pos = Vector3D(0, 0, 0)
         for module_ in module_list:
             # adjust position
@@ -204,7 +197,7 @@ class Relocation:
         graph.set_loop_count(self._graph.loop_count)
         added_node = {}
         for module_ in module_list:
-            for edge in module_.frame_edge_list + module_.cross_edge_list:
+            for edge in module_.edge_list:
                 color = edge.color
                 node1 = added_node[edge.node1] if edge.node1 in added_node else edge.node1
                 node2 = added_node[edge.node2] if edge.node2 in added_node else edge.node2

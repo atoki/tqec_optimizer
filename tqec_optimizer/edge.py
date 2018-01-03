@@ -127,7 +127,6 @@ class CrossEdge(Edge):
     def module_id(self):
         return self._module_id
 
-    @property
     def is_fixed(self):
         return self._fix
 

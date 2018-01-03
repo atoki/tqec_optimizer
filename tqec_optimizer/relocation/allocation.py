@@ -1,3 +1,6 @@
+import random
+import math
+
 from collections import defaultdict
 
 
@@ -19,6 +22,79 @@ class Allocation:
         self.__detect_connect_edge()
         self.__assign_connect_edge()
         self.__assign_isolated_edge()
+        self.__sa()
+
+    def __sa(self):
+        initial_t = 100
+        final_t = 0.01
+        cool_rate = 0.97
+        limit = 100
+
+        current_cost = self.__evaluate(self._module_list)
+        t = initial_t
+        while t > final_t:
+            for n in range(limit):
+                module_size = len(self._module_list)
+                module_index = random.randint(0, module_size - 1)
+                cross_edge_size = len(self._module_list[module_index].cross_edge_list)
+                edge_index1 = random.randint(0, cross_edge_size - 1)
+                edge_index2 = random.randint(0, cross_edge_size - 1)
+
+                if not self.__swap(module_index, edge_index1, edge_index2):
+                    continue
+
+                new_cost = self.__evaluate(self._module_list)
+
+                if self.__should_change(new_cost - current_cost, t):
+                    current_cost = new_cost
+                else:
+                    self.__swap(module_index, edge_index1, edge_index2)
+            t *= cool_rate
+
+    @staticmethod
+    def __should_change(delta, t):
+        if delta <= 0:
+            return 1
+        if random.random() < math.exp(- delta / t):
+            return 1
+        return 0
+
+    def __swap(self, module_index, edge_index1, edge_index2):
+        edge1 = self._module_list[module_index].cross_edge_list[edge_index1]
+        edge2 = self._module_list[module_index].cross_edge_list[edge_index2]
+
+        if edge1.is_fixed() or edge2.is_fixed():
+            return False
+
+        edge1_id = edge1.id
+        edge2_id = edge2.id
+        edge1.set_id(edge2_id)
+        edge1.node1.set_id(edge2_id)
+        edge1.node2.set_id(edge2_id)
+        edge2.set_id(edge1_id)
+        edge2.node1.set_id(edge1_id)
+        edge2.node2.set_id(edge1_id)
+
+        return True
+
+    @staticmethod
+    def __evaluate(module_list):
+        cross_node_map = defaultdict(list)
+        for module_ in module_list:
+            for node in module_.cross_node_list:
+                cross_node_map[node.id].append(node)
+
+        point = 0.0
+        for id_, node_list in cross_node_map.items():
+            min_x = min_y = min_z = math.inf
+            max_x = max_y = max_z = -math.inf
+            for node in node_list:
+                min_x, min_y, min_z = min(node.x, min_x), min(node.y, min_y), min(node.z, min_z)
+                max_x, max_y, max_z = max(node.x, max_x), max(node.y, max_y), max(node.z, max_z)
+
+            point += ((max_x - min_x) + (max_y - min_y) + (max_z - min_z)) * 2.0
+
+        return point
 
     def __detect_connect_edge(self):
         for module_ in self._module_list:

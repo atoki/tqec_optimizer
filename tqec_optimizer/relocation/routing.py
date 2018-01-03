@@ -15,7 +15,7 @@ class Routing:
         self._module_list = module_list
         self._route_pair = route_pair
         self._var_node_count = graph.var_node_count
-        self._space = 2
+        self._space = 1
         self._invalid_edge = {}
 
         (max_x, max_y, max_z) = (0, 0, 0)
