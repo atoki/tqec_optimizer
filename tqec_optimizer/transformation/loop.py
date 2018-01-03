@@ -123,7 +123,7 @@ class Loop:
         self._height = max_y - min_y
         self._depth = max_z - min_z
 
-    def debug(self):
+    def dump(self):
         print("-----  loop id: {} -----".format(self._id))
         print("type          = {}".format(self._edge_list[0].node1.type))
         print("edge list     = {}".format(len(self._edge_list)))

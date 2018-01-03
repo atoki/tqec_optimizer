@@ -223,7 +223,7 @@ class Module:
     def __invalidate_rotate(from_, to):
         return from_ % 2 != to % 2
 
-    def debug(self):
+    def dump(self):
         print("--- ", self._id, " ---")
         print("position : (", self._pos.x, ",", self._pos.y, ",", self._pos.z, ")")
         print("width : ", self._width)

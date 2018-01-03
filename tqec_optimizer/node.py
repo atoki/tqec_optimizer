@@ -90,7 +90,7 @@ class Node:
     def edge_list(self):
         return self._edge_list
 
-    def debug(self):
+    def dump(self):
         print("type: {} id: {} ({}, {}, {})".format(self._type, self._id, self._pos.x, self._pos.y, self._pos.z))
 
 

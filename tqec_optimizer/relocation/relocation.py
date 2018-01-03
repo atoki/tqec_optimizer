@@ -339,7 +339,3 @@ class Relocation:
                   0x00ff00, 0xffff00, 0x8b0000, 0xff1493, 0x800080]
         return colors[loop_id % 10]
 
-    def debug(self):
-        print("--- module list ---")
-        for module_ in self._module_list:
-            module_.debug()

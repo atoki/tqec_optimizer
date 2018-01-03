@@ -70,7 +70,7 @@ class Circuit:
         self._length = len(self._operations) * 6
         self._width = len(self._bits) * 2
 
-    def debug(self):
+    def dump(self):
         print("bits :", self._bits)
         print("inputs :", self._inputs)
         print("outputs :", self._outputs)

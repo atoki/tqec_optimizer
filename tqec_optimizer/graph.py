@@ -455,9 +455,9 @@ class Graph:
 
         return edge
 
-    def debug(self):
+    def dump(self):
         for node in self._node_list:
-            node.debug()
+            node.dump()
 
         for edge in self._edge_list:
-            edge.debug()
+            edge.dump()

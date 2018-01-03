@@ -42,5 +42,5 @@ class Vector3D:
     def to_array(self):
         return [self._x, self._y, self._z]
 
-    def debug(self):
+    def dump(self):
         print("pos (", self._x, ",", self._y, ",", self.z, ")")
