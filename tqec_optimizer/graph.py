@@ -1,6 +1,6 @@
 import copy
 
-from .position import Position
+from .vector3d import Vector3D
 from .node import Node
 from .edge import Edge
 
@@ -213,7 +213,7 @@ class Graph:
         #  2----3-><-4
         #
         # 1
-        pos = Position(target_no * space - 1, 1, no * 6 + 3 - space)
+        pos = Vector3D(target_no * space - 1, 1, no * 6 + 3 - space)
         node_array.append(self.__new_node(type, pos.x, pos.y, pos.z))
         pos.incx(space)
         # 2
@@ -284,7 +284,7 @@ class Graph:
 
         # ブレイディングの作成
         loop_id = self.__new_loop_variable()
-        pos = Position(cbit_no * space - 1 * d, 1, no * 6 + 3 - space * d)
+        pos = Vector3D(cbit_no * space - 1 * d, 1, no * 6 + 3 - space * d)
         node_array.append(self.__new_node(type, pos.x, pos.y, pos.z))
         pos.incx(space * d)
         node_array.append(self.__new_node(type, pos.x, pos.y, pos.z))
@@ -455,9 +455,9 @@ class Graph:
 
         return edge
 
-    def debug(self):
+    def dump(self):
         for node in self._node_list:
-            node.debug()
+            node.dump()
 
         for edge in self._edge_list:
-            edge.debug()
+            edge.dump()

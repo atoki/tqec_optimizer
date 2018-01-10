@@ -4,15 +4,18 @@ from .sa import SA
 
 
 class TSP:
-    def __init__(self, graph, module_list, joint_pair_list):
+    def __init__(self, graph, module_list):
         self._graph = graph
         self._module_list = module_list
-        self._joint_pair_list = joint_pair_list
+        self._joint_pair_list = []
         self._end_map = {}
         self._invalidate_pair = {}
         self._route_list = defaultdict(list)
         self._route_pair = {}
         self._result_pair = {}
+
+        for module_ in module_list:
+            self._joint_pair_list.extend(module_.joint_pair_list)
 
         self.__create_end_map()
 

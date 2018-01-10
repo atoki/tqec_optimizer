@@ -56,12 +56,11 @@ def main():
 
     # optimization of non topology
     loop_list = Transformation(graph).execute()
-    print("transformation cost: {}".format(evaluate(graph)))
     CircuitWriter(graph).write("2-transform.json")
 
     # optimization of topology
     graph = Relocation(type_, loop_list, graph).execute()
-    print("relocation cost: {}".format(evaluate(graph)))
+    print("result cost: {}".format(evaluate(graph)))
 
     # output
     CircuitWriter(graph).write(output_file)

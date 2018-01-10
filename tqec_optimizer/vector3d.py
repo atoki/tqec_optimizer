@@ -1,4 +1,4 @@
-class Position:
+class Vector3D:
     def __init__(self, x=0, y=0, z=0):
         self._x = x
         self._y = y
@@ -42,5 +42,5 @@ class Position:
     def to_array(self):
         return [self._x, self._y, self._z]
 
-    def debug(self):
+    def dump(self):
         print("pos (", self._x, ",", self._y, ",", self.z, ")")

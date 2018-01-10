@@ -15,7 +15,7 @@ class Routing:
         self._module_list = module_list
         self._route_pair = route_pair
         self._var_node_count = graph.var_node_count
-        self._space = 2
+        self._space = 1
         self._invalid_edge = {}
 
         (max_x, max_y, max_z) = (0, 0, 0)
@@ -50,7 +50,6 @@ class Routing:
         count, limit = 0, 100
         while update:
             count += 1
-            print("loop: {}".format(count))
             for index, (src, dst) in enumerate(self._route_pair.items(), start=1):
                 self.__clear(index, routes)
                 route = BestFirstSearch(src, dst,
@@ -62,6 +61,7 @@ class Routing:
                 routes[index] = route
             update = self.__check()
             if count == limit:
+                print("routing failed")
                 break
 
         self.__create_route(routes)
