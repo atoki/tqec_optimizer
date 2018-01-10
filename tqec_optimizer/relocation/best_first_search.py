@@ -96,9 +96,9 @@ class BestFirstSearch:
         return expanded_nodes
 
     def __is_prohibit(self, current_node, next_node):
-        if next_node.x < -self._space or next_node.x > self._size[0] \
-                or next_node.y < -self._space or next_node.y > self._size[1] \
-                or next_node.z < -self._space or next_node.z > self._size[2]:
+        if next_node.x < self._size[0][0] or next_node.x > self._size[0][1] \
+                or next_node.y < self._size[1][0] or next_node.y > self._size[1][1] \
+                or next_node.z < self._size[2][0] or next_node.z > self._size[2][1]:
             return True
 
         edge_x = int((current_node.x + next_node.x) / 2)

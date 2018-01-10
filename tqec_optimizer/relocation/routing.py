@@ -15,8 +15,8 @@ class Routing:
         self._module_list = module_list
         self._route_pair = route_pair
         self._var_node_count = graph.var_node_count
-        self._space = 1
-        self._invalid_edge = {}
+        self._space = 3
+        self._size_table = {}
 
         (max_x, max_y, max_z) = (0, 0, 0)
         for node in self._graph.node_list:
@@ -24,8 +24,9 @@ class Routing:
             max_y = max(max_y, node.y)
             max_z = max(max_z, node.z)
 
-        self._size = (max_x + self._space, max_y + self._space, max_z + self._space)
-        self.__create_used_node_array(max_x, max_y, max_z)
+        self._size = (max_x, max_y, max_z)
+        self.__create_size_table()
+        self.__create_used_node_array(max_x + self._space, max_y + self._space, max_z + self._space)
 
         self._grid = [[[0
                         for z in range(0, int(max_z + self._space * 2) + 1)]
@@ -40,14 +41,14 @@ class Routing:
                                     1,
                                     self._grid,
                                     self._used_node_array,
-                                    self._size,
+                                    self._size_table[0],
                                     self._space,
                                     True).search()
             routes[index] = route
 
         # 経路決定まで引き剥がしをlimitを限度に繰り返す
         update = self.__check()
-        count, limit = 0, 100
+        count, limit = 0, 699
         while update:
             count += 1
             for index, (src, dst) in enumerate(self._route_pair.items(), start=1):
@@ -56,7 +57,7 @@ class Routing:
                                         count,
                                         self._grid,
                                         self._used_node_array,
-                                        self._size,
+                                        self._size_table[int(count/100)],
                                         self._space).search()
                 routes[index] = route
             update = self.__check()
@@ -103,6 +104,15 @@ class Routing:
                 if last_node is not None:
                     self.__new__edge(node, last_node, "edge", id_)
                 last_node = node
+
+    def __create_size_table(self):
+        self._size_table[0] = ((-1, self._size[0] + 1), (-1, self._size[1] + 1), (-1, self._size[2] + 1))
+        self._size_table[1] = ((-3, self._size[0] + 1), (-1, self._size[1] + 1), (-1, self._size[2] + 1))
+        self._size_table[2] = ((-3, self._size[0] + 1), (-3, self._size[1] + 1), (-1, self._size[2] + 1))
+        self._size_table[3] = ((-3, self._size[0] + 1), (-3, self._size[1] + 1), (-3, self._size[2] + 1))
+        self._size_table[4] = ((-3, self._size[0] + 3), (-3, self._size[1] + 1), (-3, self._size[2] + 1))
+        self._size_table[5] = ((-3, self._size[0] + 3), (-3, self._size[1] + 3), (-3, self._size[2] + 1))
+        self._size_table[6] = ((-3, self._size[0] + 3), (-3, self._size[1] + 3), (-3, self._size[2] + 3))
 
     def __create_used_node_array(self, max_x, max_y, max_z):
         """

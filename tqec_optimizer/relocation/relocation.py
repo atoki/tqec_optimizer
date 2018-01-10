@@ -48,14 +48,12 @@ class Relocation:
         # 各モジュールの配置決定
         result = self.__sa_relocation(module_list)
 
-        self.__color_cross_edge(result)
         graph = self.__to_graph(result)
         CircuitWriter(graph).write("4-relocation.json")
 
         # 各辺に対するidの割当を決定
         Allocation(result, self._cross_id_set).execute()
         print("allocation is completed")
-        self.__color_cross_edge(result)
         graph = self.__to_graph(result)
         CircuitWriter(graph).write("5-allocation.json")
 
