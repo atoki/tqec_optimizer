@@ -19,6 +19,7 @@ def usage():
         -h|--help
         -i|--input  FILE
         -o|--output FILE
+        -t|--type   module type (dual or primal)
         """)
 
 
