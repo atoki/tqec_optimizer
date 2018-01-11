@@ -67,7 +67,27 @@ class Circuit:
         """
         量子回路情報からTQEC回路に必要な情報を更新する
         """
-        self._length = len(self._operations) * 6
+        cnot_length, injector_length = 0, 0
+        injector_target = {}
+        last_operation = None
+        for operation in self._operations:
+            if operation["type"] == "cnot":
+                cnot_length += 1
+                injector_target.clear()
+            else:
+                if operation["target"] in injector_target:
+                    injector_length += 1
+                    injector_target.clear()
+                injector_target[operation["target"]] = operation["type"]
+            last_operation = operation
+
+        # 最後の演算がS or Tで外部出力がある場合は回路を一段階伸ばす
+        expand_length = 0
+        for output in self._outputs:
+            if last_operation["type"] != "cnot" and last_operation["target"] == output:
+                expand_length += 2
+
+        self._length = cnot_length * 6 + injector_length * 2 + expand_length
         self._width = len(self._bits) * 2
 
     def dump(self):

@@ -38,7 +38,8 @@ class Graph:
         self.__create_measurements()
         self.__create_outputs()
 
-        self.__update_cross_info()
+
+        # self.__update_cross_info()
         self.__adjust_cross_edge()
 
     @property
@@ -76,23 +77,28 @@ class Graph:
         print("width: ", self._circuit.width)
         print("length:", self._circuit.length)
 
-        # CNOTならcontrol, T,Sならtargetのx座標を保存したリストを作成する
-        operation_x_list = []
-        for operation in self._circuit.operations:
-            if operation["type"] == "cnot":
-                operation_x_list.append(operation["control"])
-            else:
-                operation_x_list.append(operation["target"])
-
         for x in range(0, self._circuit.width, 2):
             last_upper_node = None
             last_lower_node = None
             for z in range(0, self._circuit.length + 1, 2):
 
-                # CNOT or T or Sの箇所は切断する
+                # CNOT 箇所は切断する
                 skip = False
-                for no, operation_x in enumerate(operation_x_list):
-                    if x == operation_x * 2 and z == no * 6 + 4:
+                cnot_x, cnot_z = 0, 0
+                injector_target = {}
+                for no, operation in enumerate(self._circuit.operations):
+                    if operation["type"] == "cnot":
+                        injector_target.clear()
+                        cnot_x = operation["control"] * 2
+                        cnot_z += 6
+                    else:
+                        if len(injector_target) > 0 and operation["target"] in injector_target:
+                            cnot_z += 2
+                            injector_target.clear()
+                        injector_target[operation["target"]] = operation["type"]
+                        cnot_x = -1
+
+                    if x == cnot_x and z == cnot_z - 2:
                         skip = True
 
                 upper_node = self.__new_node(type, x, upper, z)
@@ -173,90 +179,48 @@ class Graph:
         CNOTとState Injectionを追加する
         初期回路のグラフ化に使用
         """
-        no = 0
+        z = 0
+        injector_target = {}
         for operation in self._circuit.operations:
             if operation["type"] == "cnot":
-                self.__create_braidings(no, operation)
+                self.__create_braidings(z, operation)
+                injector_target.clear()
+                z += 6
             else:
-                self.__create_state_injection(no, operation)
-            no += 1
+                if len(injector_target) > 0:
+                    if operation["target"] in injector_target:
+                        z += 2
+                        self.__create_state_injection(z, operation)
+                        injector_target.clear()
+                    else:
+                        self.__create_state_injection(z, operation)
+                else:
+                    self.__create_state_injection(z, operation)
+                injector_target[operation["target"]] = operation["type"]
 
-    def __create_state_injection(self, no, operation):
+    def __create_state_injection(self, z, operation):
         """
         State Injectionの追加
         初期回路のグラフ化に使用
 
-        :param no このState Injectionが作成さらた順番
+        :param z State Injectionを設置するz座標
         :param operation
         """
-        (type, space) = ("dual", 2)
-        target_no = operation["target"]
-        node_array = []
-
-        # ループを閉じる為のEdgeを作成
-        loop_id = self.__get_front_edge_loop_id(target_no * space, no * 6 + 3 - 1)
-        upper = self.__node(target_no * space, 2, no * 6 + 3 - 1)
-        lower = self.__node(target_no * space, 0, no * 6 + 3 - 1)
-        primal_edge1 = self.__new__edge(upper, lower, "line", loop_id)
+        loop_id = self.__get_front_edge_loop_id(operation["target"] * 2, z)
+        node1 = self.__node(operation["target"] * 2, 0, z)
+        node2 = self.__node(operation["target"] * 2, 2, z)
+        self.__new__edge(node1, node2, "pin", loop_id)
 
         loop_id = self.__new_loop_variable()
-        upper = self.__node(target_no * space, 2, no * 6 + 3 + 1)
-        lower = self.__node(target_no * space, 0, no * 6 + 3 + 1)
-        primal_edge2 = self.__new__edge(upper, lower, "line", loop_id)
-        self.__assign_line_id(target_no * space, no * 6 + 3 + 1, loop_id)
+        self.__assign_line_id(operation["target"] * 2, z, loop_id)
 
-        # State Injection Loop の作成
-        #
-        #  1----6----5
-        #  |         |
-        #  |         |
-        #  2----3-><-4
-        #
-        # 1
-        pos = Vector3D(target_no * space - 1, 1, no * 6 + 3 - space)
-        node_array.append(self.__new_node(type, pos.x, pos.y, pos.z))
-        pos.incx(space)
-        # 2
-        node_array.append(self.__new_node(type, pos.x, pos.y, pos.z))
-        pos.incz(space)
-        # 3
-        node_array.append(self.__new_node(type, pos.x, pos.y, pos.z))
-        pos.incz(space)
-        # 4
-        node_array.append(self.__new_node(type, pos.x, pos.y, pos.z))
-        pos.decx(space)
-        # 5
-        node_array.append(self.__new_node(type, pos.x, pos.y, pos.z))
-        pos.decz(space)
-        # 6
-        node_array.append(self.__new_node(type, pos.x, pos.y, pos.z))
-
-        # add edge
-        loop_id = self.__new_loop_variable()
-        first_node = node_array[0]
-        last_node = None
-        for no, node in enumerate(node_array):
-            # 辺を1つだけPinにする
-            category = "pin" if no == 3 else "edge"
-            if last_node is not None:
-                edge = self.__new__edge(node, last_node, category, loop_id)
-                # 交差するedgeを追加する
-                if no == 1:
-                    edge.add_cross_edge(primal_edge1)
-                    primal_edge1.add_cross_edge(edge)
-                if no == 4:
-                    edge.add_cross_edge(primal_edge2)
-                    primal_edge2.add_cross_edge(edge)
-            last_node = node
-        self.__new__edge(first_node, last_node, "edge", loop_id)
-
-    def __create_braidings(self, no, cnot):
+    def __create_braidings(self, z, cnot):
         """
         ブレイディング(Controlled NOT)の追加
         初期回路のグラフ化に使用
         左回りに作る
 
-        :param no このCNOTが作成さらた順番
+        :param z CNOT gate を設置するz座標
         :param cnot
         """
         (type, space) = ("dual", 2)
@@ -271,20 +235,20 @@ class Graph:
         d = 1.0 if (cbit_no < tbit_no_array[0]) else -1.0
 
         # ループを閉じる為のEdgeを作成
-        loop_id = self.__get_front_edge_loop_id(cbit_no * space, no * 6 + 3 - 1)
-        upper = self.__node(cbit_no * space, 2, no * 6 + 3 - 1)
-        lower = self.__node(cbit_no * space, 0, no * 6 + 3 - 1)
+        loop_id = self.__get_front_edge_loop_id(cbit_no * space, z + 3 - 1)
+        upper = self.__node(cbit_no * space, 2, z + 3 - 1)
+        lower = self.__node(cbit_no * space, 0, z + 3 - 1)
         primal_edge1 = self.__new__edge(upper, lower, "line", loop_id)
 
         loop_id = self.__new_loop_variable()
-        upper = self.__node(cbit_no * space, 2, no * 6 + 3 + 1)
-        lower = self.__node(cbit_no * space, 0, no * 6 + 3 + 1)
+        upper = self.__node(cbit_no * space, 2, z + 3 + 1)
+        lower = self.__node(cbit_no * space, 0, z + 3 + 1)
         primal_edge2 = self.__new__edge(upper, lower, "line", loop_id)
-        self.__assign_line_id(cbit_no * space, no * 6 + 3 + 1, loop_id)
+        self.__assign_line_id(cbit_no * space, z + 3 + 1, loop_id)
 
         # ブレイディングの作成
         loop_id = self.__new_loop_variable()
-        pos = Vector3D(cbit_no * space - 1 * d, 1, no * 6 + 3 - space * d)
+        pos = Vector3D(cbit_no * space - 1 * d, 1, z + 3 - space * d)
         node_array.append(self.__new_node(type, pos.x, pos.y, pos.z))
         pos.incx(space * d)
         node_array.append(self.__new_node(type, pos.x, pos.y, pos.z))
