@@ -80,12 +80,13 @@ class Relocation:
         cool_rate = 0.99
         limit = 100
 
+        self.__create_initial_placement(module_list)
         current_cost = TqecEvaluator(module_list).evaluate()
         place = SequenceTriple(module_list)
         place.build_permutation()
         t = initial_t
         start = time.time()
-        result = None
+        result = module_list
         while t > final_t:
             for n in range(limit):
                 place.create_neighborhood()
