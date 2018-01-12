@@ -50,6 +50,8 @@ class Transformation:
                     no += 1
                     break
 
+        self.__color_loop()
+
         print("non topological deforming is completed")
         return self._loop_list
 
@@ -235,7 +237,13 @@ class Transformation:
 
             # delete node
             for index in non_loop_node_index:
-                del self._graph.node_list[index]
+                # loop_idが0の場合は、injectorが付いたノードは削除しない
+                has_injector = False
+                for edge in self._graph.node_list[index].edge_list:
+                    if edge.is_injector() and loop_id == 0:
+                        has_injector = True
+                if not has_injector:
+                    del self._graph.node_list[index]
 
         # delete loop
         if loop_id > 0:

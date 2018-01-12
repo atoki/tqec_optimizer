@@ -38,8 +38,7 @@ class Graph:
         self.__create_measurements()
         self.__create_outputs()
 
-
-        # self.__update_cross_info()
+        self.__update_cross_info()
         self.__adjust_cross_edge()
 
     @property
@@ -211,9 +210,6 @@ class Graph:
         node2 = self.__node(operation["target"] * 2, 2, z)
         self.__new__edge(node1, node2, "pin", loop_id)
 
-        loop_id = self.__new_loop_variable()
-        self.__assign_line_id(operation["target"] * 2, z, loop_id)
-
     def __create_braidings(self, z, cnot):
         """
         ブレイディング(Controlled NOT)の追加
@@ -331,11 +327,12 @@ class Graph:
         """
         CNOTのtargetとbit列の交差情報を更新する
         """
+        z = 0
+        injector_target = {}
         for no, operation in enumerate(self._circuit.operations):
             if operation["type"] == "cnot" and operation["control"] < operation["targets"][0]:
                 for target in operation["targets"]:
                     x = target * 2
-                    z = no * 6
                     primal_node1 = self.__node(x, 2, z + 2)
                     primal_node2 = self.__node(x, 2, z)
                     primal_edge = self.__edge(primal_node1, primal_node2)
@@ -348,15 +345,30 @@ class Graph:
             if operation["type"] == "cnot" and operation["control"] > operation["targets"][0]:
                 for target in operation["targets"]:
                     x = target * 2
-                    z = no * 6 + 4
-                    primal_node1 = self.__node(x, 2, z + 2)
-                    primal_node2 = self.__node(x, 2, z)
+                    primal_node1 = self.__node(x, 2, z + 6)
+                    primal_node2 = self.__node(x, 2, z + 4)
                     primal_edge = self.__edge(primal_node1, primal_node2)
-                    dual_node1 = self.__node(x - 1, 1, z + 1)
-                    dual_node2 = self.__node(x + 1, 1, z + 1)
+                    dual_node1 = self.__node(x - 1, 1, z + 5)
+                    if dual_node1 is None:
+                        print("dual node1 is None")
+                    dual_node2 = self.__node(x + 1, 1, z + 5)
+                    if dual_node2 is None:
+                        print("dual node2 is None")
                     dual_edge = self.__edge(dual_node1, dual_node2)
                     primal_edge.add_cross_edge(dual_edge)
                     dual_edge.add_cross_edge(primal_edge)
+
+            if operation["type"] == "cnot":
+                z += 6
+                injector_target.clear()
+            else:
+                if len(injector_target) > 0:
+                    if operation["target"] in injector_target:
+                        z += 2
+                        injector_target.clear()
+                    else:
+                        self.__create_state_injection(z, operation)
+                injector_target[operation["target"]] = operation["type"]
 
     def __assign_line_id(self, x, z, id):
         """
