@@ -20,6 +20,7 @@ class ModuleFactory:
 
     def __create_frame(self):
         cross_edge_num = max(1, len(self._loop.cross_list))
+        injector_num = max(0, len(self._loop.injector_list) - 1)
         node_array = []
         pos = Vector3D(0, 0, 0)
 
@@ -27,12 +28,12 @@ class ModuleFactory:
         node_array.append(self.__new_node("frame", pos))
         pos.incy(2)
         node_array.append(self.__new_node("frame", pos))
-        for n in range(0, cross_edge_num):
+        for n in range(0, cross_edge_num + injector_num):
             pos.incz(2)
             node_array.append(self.__new_node("frame", pos))
         pos.decy(2)
         node_array.append(self.__new_node("frame", pos))
-        for n in range(0, cross_edge_num - 1):
+        for n in range(0, cross_edge_num + injector_num - 1):
             pos.decz(2)
             node_array.append(self.__new_node("frame", pos))
 

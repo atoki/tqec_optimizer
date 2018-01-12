@@ -349,11 +349,7 @@ class Graph:
                     primal_node2 = self.__node(x, 2, z + 4)
                     primal_edge = self.__edge(primal_node1, primal_node2)
                     dual_node1 = self.__node(x - 1, 1, z + 5)
-                    if dual_node1 is None:
-                        print("dual node1 is None")
                     dual_node2 = self.__node(x + 1, 1, z + 5)
-                    if dual_node2 is None:
-                        print("dual node2 is None")
                     dual_edge = self.__edge(dual_node1, dual_node2)
                     primal_edge.add_cross_edge(dual_edge)
                     dual_edge.add_cross_edge(primal_edge)
@@ -366,8 +362,6 @@ class Graph:
                     if operation["target"] in injector_target:
                         z += 2
                         injector_target.clear()
-                    else:
-                        self.__create_state_injection(z, operation)
                 injector_target[operation["target"]] = operation["type"]
 
     def __assign_line_id(self, x, z, id):
