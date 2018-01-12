@@ -37,6 +37,8 @@ class Allocation:
                 module_size = len(self._module_list)
                 module_index = random.randint(0, module_size - 1)
                 cross_edge_size = len(self._module_list[module_index].cross_edge_list)
+                if cross_edge_size < 2:
+                    continue
                 edge_index1 = random.randint(0, cross_edge_size - 1)
                 edge_index2 = random.randint(0, cross_edge_size - 1)
 
