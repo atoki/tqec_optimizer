@@ -44,3 +44,8 @@ class Vector3D:
 
     def dump(self):
         print("pos (", self._x, ",", self._y, ",", self.z, ")")
+
+
+class Size(Vector3D):
+    def __init__(self, x=0, y=0, z=0):
+        super().__init__(x, y, z)
