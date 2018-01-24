@@ -1,5 +1,4 @@
 from .loop import Loop
-from .best_first_search import BestFirstSearch
 
 from ..graph import Node
 from ..graph import Edge
@@ -18,63 +17,46 @@ class Transformation:
         self._graph = graph
         self._var_node_count = graph.var_node_count
         self._loop_list = []
-        self._space = 4
-
-        (max_x, max_y, max_z) = (0, 0, 0)
-        for node in self._graph.node_list:
-            max_x = max(max_x, node.x)
-            max_y = max(max_y, node.y)
-            max_z = max(max_z, node.z)
-
-        self._size = (max_x + self._space, max_y + self._space, max_z + self._space)
-        """
-        primal(dual)_used_node_array
-        0: ノードが存在しないことを示す
-        1: 実際にノードが存在することを示す
-        2: loopの領域で侵入不可なノード(座標)を示す
-        """
-        self._primal_used_node_array = [[[0
-                                          for z in range(0, int(max_z + self._space * 2) + 1)]
-                                         for y in range(0, int(max_y + self._space * 2) + 1)]
-                                        for x in range(0, int(max_x + self._space * 2) + 1)]
-
-        self._dual_used_node_array = [[[0
-                                        for z in range(0, int(max_z + self._space * 2) + 1)]
-                                       for y in range(0, int(max_y + self._space * 2) + 1)]
-                                      for x in range(0, int(max_x + self._space * 2) + 1)]
-
-        for node in self._graph.node_list:
-            self._primal_used_node_array[node.x + self._space][node.y + self._space][node.z + self._space] = 1
-            self._dual_used_node_array[node.x + self._space][node.y + self._space][node.z + self._space] = 1
 
         # 閉じていない辺を削除
         self.__delete_loop(0)
         self.__create_loop()
-        self.__create_used_node_array(max_x, max_y, max_z)
 
     def execute(self):
+        for loop in self._loop_list:
+            reduction = self.__rule2(loop)
+            if reduction:
+                break
         reduction = True
         no = 1
-        print("-- rule1 --")
         while reduction:
-            print("-step{}".format(no))
             for loop in self._loop_list:
-                reduction = self.__rule1(loop)
+                reduction = self.__rule3(loop)
                 if reduction:
                     no += 1
                     break
 
         reduction = True
         no = 1
-        print("-- rule2 --")
         while reduction:
-            print("-step{}".format(no))
             for loop in self._loop_list:
                 reduction = self.__rule2(loop)
                 if reduction:
                     no += 1
                     break
 
+        reduction = True
+        no = 1
+        while reduction:
+            for loop in self._loop_list:
+                reduction = self.__rule1(loop)
+                if reduction:
+                    no += 1
+                    break
+
+        self.__color_loop()
+
+        print("non topological deforming is completed")
         return self._loop_list
 
     def __create_loop(self):
@@ -110,7 +92,6 @@ class Transformation:
         cross_loop.shift_injector(loop.injector_list[0].category)
         cross_loop.remove_cross(loop.id)
         self.__delete_loop(loop.id)
-        self.__remove_loop_obstacle(loop)
 
         return True
 
@@ -126,9 +107,6 @@ class Transformation:
             for cross_edge in edge.cross_edge_list:
                 cross_edge_list.append(cross_edge)
 
-        # node1, node2 = cross_edge_list[0].node1, cross_edge_list[0].node2
-        # node3, node4 = cross_edge_list[1].node1, cross_edge_list[1].node2
-
         # ループを削除する
         cross_loop_list = []
         delete_loop_id = loop.id
@@ -137,7 +115,6 @@ class Transformation:
             cross_loop.remove_cross(delete_loop_id)
             cross_loop_list.append(cross_loop)
         self.__delete_loop(delete_loop_id)
-        self.__remove_loop_obstacle(loop)
 
         # ループに交差した辺を全て削除する
         for del_edge in cross_edge_list:
@@ -146,15 +123,55 @@ class Transformation:
         # 2つのループを結合する
         self.__connect_loop(cross_loop_list[0], cross_loop_list[1])
 
-        # ループを1つにするためにノードをつなげる
-        # if loop.type == "dual":
-        #     self.__connect_node(cross_loop_list[0], node1, node3)
-        #     self.__connect_node(cross_loop_list[0], node2, node4)
-
         return True
 
     def __rule3(self, loop):
-        pass
+        """
+        変形規則3
+        """
+        if len(loop.cross_list) < 3 or len(loop.injector_list) != 0:
+            return False
+
+        """
+        loop1がloop2, loop3, loop4...と交差していると仮定
+        1. loop1に交差してinjectorを含まないloop2を見つける
+        2. loop2に交差したloopsをloop3, loop4...と公差させる
+        3. loop1, loop2を削除
+        """
+        # loop1に交差してinjectorを含まないloop2を見つける
+        cross_loop_list = []
+        delete_loop = None
+        for cross_loop_id in loop.cross_list:
+            cross_loop = self.__loop(cross_loop_id)
+            cross_loop_list.append(cross_loop)
+            if len(cross_loop.injector_list) == 0:
+                delete_loop = cross_loop
+
+        # loop2が見つからなかった
+        if delete_loop is None:
+            return False
+
+        # loop1と公差しているloopからloop1の公差情報を削除
+        for cross_loop in cross_loop_list:
+            cross_loop.remove_cross(loop.id)
+
+        # loop2に交差したshift_loopsをloop3, loop4...と公差させる
+        for shift_id in delete_loop.cross_list:
+            if shift_id == loop.id:
+                continue
+            shift_loop = self.__loop(shift_id)
+            shift_loop.remove_cross(delete_loop.id)
+            for cross_loop in cross_loop_list:
+                if cross_loop.id == delete_loop.id:
+                    continue
+                cross_loop.add_cross(shift_id)
+                shift_loop.add_cross(cross_loop.id)
+
+        # loop1, loop2を削除
+        self.__delete_loop(loop.id)
+        self.__delete_loop(delete_loop.id)
+
+        return True
 
     def __connect_loop(self, loop1, loop2):
         """
@@ -179,50 +196,6 @@ class Transformation:
             loop1.add_injector(injector)
 
         self.__delete_loop(loop2.id, True)
-
-    def __connect_node(self, loop, start, end):
-        """
-        start(node)とend(node)を接続する
-        接続するために追加されたノード, 辺はloopに追加する
-
-        :param loop 接続のために生成されたノードと辺を追加するループ
-        :param start 接続元ノード
-        :param end 接続先ノード
-        """
-        obstacle_node_array = self._primal_used_node_array if start.type == "dual" else self._dual_used_node_array
-        route = BestFirstSearch(start, end, obstacle_node_array, self._size, self._space).search()
-        self.__create_route(loop, start, end, route)
-
-    def __create_route(self, loop, start, end, route):
-        """
-        start(node)とend(node)を接続するrouteを元に
-        経路をに必要なノードと辺を作成する
-
-        :param loop 接続のために生成されたノードと辺を追加するループ
-        :param start 接続元ノード
-        :param end 接続先ノード
-        :param route 経路に必要なノードの配列
-        """
-        # routeが始点と終点のみで構成されている場合
-        if len(route) == 2:
-            edge = self.__new__edge(start, end, "edge", loop.id)
-            loop.add_edge(edge)
-            return
-
-        node_array = []
-        # 始点と終点は既にグラフに追加されているため追加しない
-        for node in route[1:len(route)-1]:
-            node = self.__new_node(start.type, node.x, node.y, node.z)
-            node_array.append(node)
-
-        node_array.insert(0, start)
-        node_array.append(end)
-        last_node = None
-        for node in node_array:
-            if last_node is not None:
-                edge = self.__new__edge(node, last_node, "edge", loop.id)
-                loop.add_edge(edge)
-            last_node = node
 
     def __delete_edge(self, del_edge):
         """
@@ -254,11 +227,6 @@ class Transformation:
                 (node1, node2) = (edge.node1, edge.node2)
                 non_loop_node_index.append(self._graph.node_list.index(node1))
                 non_loop_node_index.append(self._graph.node_list.index(node2))
-                if not only_loop:
-                    self._primal_used_node_array[node1.x + self._space][node1.y + self._space][node1.z + self._space] = 0
-                    self._dual_used_node_array[node1.x + self._space][node1.y + self._space][node1.z + self._space] = 0
-                    self._primal_used_node_array[node2.x + self._space][node2.y + self._space][node2.z + self._space] = 0
-                    self._dual_used_node_array[node2.x + self._space][node2.y + self._space][node2.z + self._space] = 0
 
         non_loop_edge_index.reverse()
         # 重複した要素を取り除く
@@ -273,53 +241,18 @@ class Transformation:
 
             # delete node
             for index in non_loop_node_index:
-                del self._graph.node_list[index]
+                # loop_idが0の場合は、injectorが付いたノードは削除しない
+                has_injector = False
+                for edge in self._graph.node_list[index].edge_list:
+                    if edge.is_injector() and loop_id == 0:
+                        has_injector = True
+                if not has_injector:
+                    del self._graph.node_list[index]
 
         # delete loop
         if loop_id > 0:
             loop_index = self._loop_list.index(self.__loop(loop_id))
             del self._loop_list[loop_index]
-
-    def __create_used_node_array(self, max_x, max_y, max_z):
-        """
-        経路として利用できないノードリストを作成する
-
-        :param max_x　X軸方向の最大サイズ
-        :param max_y　Y軸方向の最大サイズ
-        :param max_z　Z軸方向の最大サイズ
-        """
-        for loop in self._loop_list:
-            min_x, max_x = loop.pos.x, loop.pos.x + loop.width
-            min_y, max_y = loop.pos.y, loop.pos.y + loop.height
-            min_z, max_z = loop.pos.z, loop.pos.z + loop.depth
-            for x in range(min_x, max_x + 1):
-                for y in range(min_y, max_y + 1):
-                    for z in range(min_z, max_z + 1):
-                        if loop.type == "primal" \
-                                and self._primal_used_node_array[x + self._space][y + self._space][z + self._space] == 0:
-                            self._primal_used_node_array[x + self._space][y + self._space][z + self._space] = 2
-                        if loop.type == "dual" \
-                                and self._dual_used_node_array[x + self._space][y + self._space][z + self._space] == 0:
-                            self._dual_used_node_array[x + self._space][y + self._space][z + self._space] = 2
-
-    def __remove_loop_obstacle(self, loop):
-        """
-        loopが占領する領域を開放する
-
-        :param loop ループ
-        """
-        min_x, max_x = loop.pos.x, loop.pos.x + loop.width
-        min_y, max_y = loop.pos.y, loop.pos.y + loop.height
-        min_z, max_z = loop.pos.z, loop.pos.z + loop.depth
-        for x in range(min_x, max_x + 1):
-            for y in range(min_y, max_y + 1):
-                for z in range(min_z, max_z + 1):
-                    if loop.type == "primal" \
-                            and self._primal_used_node_array[x + self._space][y + self._space][z + self._space] == 2:
-                        self._primal_used_node_array[x + self._space][y + self._space][z + self._space] = 0
-                    if loop.type == "dual" \
-                            and self._dual_used_node_array[x + self._space][y + self._space][z + self._space] == 2:
-                        self._dual_used_node_array[x + self._space][y + self._space][z + self._space] = 0
 
     def __new_node_variable(self):
         self._var_node_count += 1
@@ -344,8 +277,6 @@ class Transformation:
 
     def __new_node(self, type_, x, y, z):
         node = Node(x, y, z, self.__new_node_variable(), type_)
-        self._primal_used_node_array[x + self._space][y + self._space][z + self._space] = 1
-        self._dual_used_node_array[x + self._space][y + self._space][z + self._space] = 1
         self._graph.add_node(node)
 
         return node

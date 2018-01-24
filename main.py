@@ -19,6 +19,7 @@ def usage():
         -h|--help
         -i|--input  FILE
         -o|--output FILE
+        -t|--type   module type (dual or primal)
         """)
 
 
@@ -56,28 +57,34 @@ def main():
 
     # optimization of non topology
     loop_list = Transformation(graph).execute()
-    print("transformation cost: {}".format(evaluate(graph)))
     CircuitWriter(graph).write("2-transform.json")
 
     # optimization of topology
     graph = Relocation(type_, loop_list, graph).execute()
-    print("relocation cost: {}".format(evaluate(graph)))
+    print("result cost: {}".format(evaluate(graph)))
 
     # output
     CircuitWriter(graph).write(output_file)
 
 
 def evaluate(graph):
-    min_x = min_y = min_z = math.inf
-    max_x = max_y = max_z = -math.inf
+    p_max_x = p_max_y = p_max_z = d_max_x = d_max_y = d_max_z = -math.inf
+    p_min_x = p_min_y = p_min_z = d_min_x = d_min_y = d_min_z = math.inf
     for node in graph.node_list:
         if node.type == "primal":
-            min_x, min_y, min_z = min(node.x, min_x), min(node.y, min_y), min(node.z, min_z)
-            max_x, max_y, max_z = max(node.x, max_x), max(node.y, max_y), max(node.z, max_z)
+            p_max_x, p_max_y, p_max_z = max(node.x, p_max_x), max(node.y, p_max_y), max(node.z, p_max_z)
+            p_min_x, p_min_y, p_min_z = min(node.x, p_min_x), min(node.y, p_min_y), min(node.z, p_min_z)
+        else:
+            d_max_x, d_max_y, d_max_z = max(node.x, d_max_x), max(node.y, d_max_y), max(node.z, d_max_z)
+            d_min_x, d_min_y, d_min_z = min(node.x, d_min_x), min(node.y, d_min_y), min(node.z, d_min_z)
 
-    width = (max_x - min_x) / 2 + 1
-    height = (max_y - min_y) / 2 + 1
-    depth = (max_z - min_z) / 2 + 1
+    width = (p_max_x - p_min_x) / 2 + 1
+    height = (p_max_y - p_min_y) / 2 + 1
+    depth = (p_max_z - p_min_z) / 2 + 1
+
+    width += int((d_max_x - p_max_x) / 2) + int(abs(d_min_x) / 2)
+    height += int((d_max_y - p_max_y) / 2) + int(abs(d_min_y) / 2)
+    depth += int((d_max_z - p_max_z) / 2) + int(abs(d_min_z) / 2)
 
     return width * height * depth
 

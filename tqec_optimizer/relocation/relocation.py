@@ -1,26 +1,22 @@
-import copy
 import random
 import math
-import sys
+import time
+import copy
 from collections import defaultdict
 
-from .module_list_factory import ModuleListFactory
+from .module import Module
+from .module_factory import ModuleFactory
 from .sequence_triple import SequenceTriple
-from .neighborhood_generator import SwapNeighborhoodGenerator, ShiftNeighborhoodGenerator
+from .allocation import Allocation
 from .tsp import TSP
-from .rip_and_reroute import RipAndReroute
 from .routing import Routing
 from .tqec_evaluator import TqecEvaluator
-from .compaction import Compaction
-from .module_factory import ModuleFactory
 
-from ..position import Position
+from ..vector3d import Vector3D
 from ..graph import Graph
-from ..node import Node
-from ..edge import Edge
+from ..node import Node, Joint
+from ..edge import Edge, CrossEdge
 from ..circuit_writer import CircuitWriter
-
-sys.setrecursionlimit(10000)
 
 
 class Relocation:
@@ -31,7 +27,7 @@ class Relocation:
         self._type = type_
         self._loop_list = loop_list
         self._graph = graph
-        self._module_list = []
+        self._cross_id_set = {}
         self._joint_pair_list = []
         self._injector_list = defaultdict(list)
         self._var_node_count = 0
@@ -43,292 +39,92 @@ class Relocation:
 
     def execute(self):
         """
-        1.モジュール化と再接続による最適化を行う
-        2.回路が内空白
-        3.Sequence-Tripleを用いた局所探索法による再配置を行う
+        Sequence-Tripleを用いたSAによる再配置を行う
         """
-        # module_list, joint_pair_list = [], []
-        # for loop in self._loop_list:
-        #     if loop.type != self._type:
-        #         continue
-        #     module_, joint_pair = ModuleFactory(self._type, loop).create()
-        #     module_list.append(module_)
-        #     joint_pair_list.extend(joint_pair)
-        #
-        # new_pos = Position(0, 0, 0)
-        # for module_ in module_list:
-        #     new_pos.debug()
-        #     module_.set_position(new_pos, True)
-        #     new_pos.incz(module_.depth)
-        #
-        # graph = self.__to_graph(module_list)
-        # route_pair = TSP(graph, module_list, joint_pair_list).search()
-        # Routing(graph, module_list, route_pair).execute()
+        # create module list
+        module_list = [ModuleFactory(self._type, loop).create() for loop in self._loop_list if loop.type == self._type]
+        self._cross_id_set = {module_.id: set(module_.cross_id_list) for module_ in module_list}
 
-        # # reduction
-        # graph = self.__reduction(self._graph)
-        # point = TqecEvaluator(None, graph, True).evaluate()
-        # print("reduction cost: {}".format(point))
-        # CircuitWriter(graph).write("3-reduction.json")
-        #
-        # # compaction
-        # graph = Compaction(graph).execute()
-        # point = TqecEvaluator(None, graph, True).evaluate()
-        # print("compaction cost: {}".format(point))
-        # CircuitWriter(graph).write("4-compaction.json")
+        # 各モジュールの配置決定
+        result = self.__sa_relocation(module_list)
 
-        # reduction
-        graph = self.__sa_relocation(self._type)
-        CircuitWriter(graph).write("5-relocation.json")
+        graph = self.__to_graph(result)
+        CircuitWriter(graph).write("4-relocation.json")
 
+        # 各辺に対するidの割当を決定
+        Allocation(result, self._cross_id_set).execute()
+        print("allocation is completed")
+        graph = self.__to_graph(result)
+        CircuitWriter(graph).write("5-allocation.json")
+
+        # 各辺の接合部の接続割当を決定
+        route_pair = TSP(graph, result).search()
+        print("TSP is completed")
+
+        # 各ネットの結ぶ経路の決定
+        Routing(graph, result, route_pair).execute()
+        print("routing is completed")
+
+        # injectorを復元
         self.__add_injector(graph)
 
         return graph
 
-    def __reduction(self, graph):
-        """
-        最初にモジュール化と再接続による最適化を行う
-
-        :param graph グラフ
-        """
-        module_list, joint_pair_list = ModuleListFactory(graph, "primal").create()
-        graph = self.__to_graph(module_list)
-        route_pair = TSP(graph, module_list, joint_pair_list).search()
-        Routing(graph, module_list, route_pair).execute()
-
-        result_graph = graph
-        cost, loop_count = TqecEvaluator(None, result_graph, True).evaluate(), 0
-        primal_reduction, dual_reduction = True, True
-        while primal_reduction or dual_reduction:
-            type_ = "primal" if loop_count % 2 == 0 else "dual"
-            if type_ == "dual":
-                dual_reduction = False
-            else:
-                primal_reduction = False
-            module_list, joint_pair_list = ModuleListFactory(result_graph, type_).create()
-            graph = self.__to_graph(module_list)
-            route_pair = TSP(graph, module_list, joint_pair_list).search()
-            RipAndReroute(graph, module_list, route_pair).search()
-            current_cost = TqecEvaluator(None, graph, True).evaluate()
-            if cost > current_cost:
-                if type_ == "dual":
-                    dual_reduction = True
-                else:
-                    primal_reduction = True
-                result_graph = graph
-                cost = current_cost
-            loop_count += 1
-
-        return result_graph
-
-    def __relocation(self, graph):
-        """
-        Sequence-Tripleを用いた局所探索法による再配置を行う
-        """
-        primal_reduction, dual_reduction = True, True
-        loop_count = 0
-        while primal_reduction or dual_reduction:
-            type_ = "dual" if loop_count % 2 == 0 else "primal"
-            if loop_count > 1:
-                if type_ == "dual":
-                    dual_reduction = False
-                else:
-                    primal_reduction = False
-            reduction = True
-            while reduction:
-                reduction = False
-                module_list, joint_pair_list = ModuleListFactory(graph, type_).create()
-                cost = TqecEvaluator(module_list).evaluate()
-                place = SequenceTriple(type_, module_list)
-                p1, p2, p3 = place.build_permutation()
-                swap_permutations_list = SwapNeighborhoodGenerator((p1, p2, p3)).generator()
-                shift_permutations_list = ShiftNeighborhoodGenerator((p1, p2, p3)).generator()
-
-                result_module_list = copy.deepcopy(module_list)
-                result_joint_pair = copy.deepcopy(joint_pair_list)
-                for step, permutations in enumerate(swap_permutations_list + shift_permutations_list):
-                    relocation_module = SequenceTriple(type_, permutations[0], permutations).recalculate_coordinate()
-                    if self.__is_validate(relocation_module):
-                        current_cost = TqecEvaluator(relocation_module).evaluate()
-                        if cost > current_cost:
-                            reduction = True
-                            if type_ == "dual":
-                                dual_reduction = True
-                            if type_ == "primal":
-                                primal_reduction = True
-                            cost = current_cost
-                            result_module_list = copy.deepcopy(relocation_module)
-                            result_joint_pair = copy.deepcopy(joint_pair_list)
-                graph = self.__to_graph(result_module_list)
-                route_pair = TSP(graph, result_module_list, result_joint_pair).search()
-                RipAndReroute(graph, result_module_list, route_pair).search()
-                file_name = str(4 + loop_count) + "-relocation.json"
-                CircuitWriter(graph).write(file_name)
-            loop_count += 1
-
-        return graph
-
-    def __sa_relocation(self, type_):
+    def __sa_relocation(self, module_list):
         """
         Simulated Annealingによる再配置を行う
-
-        :param type_ primal or dual モジュールを作る基準
+        :param module_list Moduleの配列
         """
         initial_t = 100
         final_t = 0.01
         cool_rate = 0.99
         limit = 100
 
-        module_list, joint_pair_list = [], []
-        for loop in self._loop_list:
-            if loop.type != type_:
-                continue
-            module_, joint_pair = ModuleFactory(type_, loop).create()
-            module_list.append(module_)
-            joint_pair_list.extend(joint_pair)
-
-        new_pos = Position(0, 0, 0)
-        for module_ in module_list:
-            new_pos.debug()
-            module_.set_position(Position(new_pos.x, new_pos.y, new_pos.z), True)
-            new_pos.incz(module_.depth)
-
-        graph = self.__to_graph(module_list)
-        CircuitWriter(graph).write("3.5-module.json")
-
+        self.__create_initial_placement(module_list)
         current_cost = TqecEvaluator(module_list).evaluate()
-        place = SequenceTriple(type_, module_list)
-        p1, p2, p3 = place.build_permutation()
+        place = SequenceTriple(module_list)
+        place.build_permutation()
         t = initial_t
-        init = True
+        start = time.time()
+        result = module_list
         while t > final_t:
-            if t % 10 < 1.0:
-                print(t)
             for n in range(limit):
-                np1, np2, np3 = self.__create_neighborhood(type_, module_list, p1, p2, p3, init)
-                if np1 is None:
+                place.create_neighborhood()
+                candidate = place.recalculate_coordinate()
+
+                if not self.__is_validate(candidate, self._cross_id_set):
+                    place.recover()
                     continue
 
-                new_cost = TqecEvaluator(module_list).evaluate()
-
-                if init and self.__is_validate(module_list):
-                    p1, p2, p3 = np1, np2, np3
-                    t = initial_t
-                    init = False
+                new_cost = TqecEvaluator(candidate).evaluate()
 
                 if self.__should_change(new_cost - current_cost, t):
                     current_cost = new_cost
-                    p1, p2, p3 = np1, np2, np3
+                    place.apply()
+                    if t < 1.0:
+                        result = self.__deep_copy_module_list(candidate)
                 else:
-                    module_list = SequenceTriple(type_, p1, (p1, p2, p3)).recalculate_coordinate()
+                    place.recover()
             t *= cool_rate
 
-        graph = self.__to_graph(module_list)
-        CircuitWriter(graph).write("4.5-relocation.json")
-        route_pair = TSP(graph, module_list, joint_pair_list).search()
-        Routing(graph, module_list, route_pair).execute()
+        elapsed_time = time.time() - start
+        print("処理時間: {}".format(elapsed_time))
+        print("relocation is completed")
 
-        return graph
+        return result
 
-    def __create_neighborhood(self, type_, module_list, p1, p2, p3, init):
+    @staticmethod
+    def __create_initial_placement(module_list):
         """
-        SA用の近傍を生成する
-        1. swap近傍
-        2. shift近傍
-        3. rotate近傍
-        以上の3つを等確率で一つ採用
-
-        :param type_ dual or primal
-        :param module_list モジュールの集合
-        :param p1 順列1
-        :param p2 順列2
-        :param p3 順列3
-        :param init 初期配置が決定していればTrue, そうでなければFalse
-        """
-        np1, np2, np3 = p1[:], p2[:], p3[:]
-
-        strategy = random.randint(1, 3)
-        # swap
-        index, rotate = 0, None
-        if strategy == 1:
-            self.__swap(np1, np2, np3)
-        elif strategy == 2:
-            self.__shift(np1, np2, np3)
-        else:
-            index, rotate = self.__rotate(np1, np2, np3)
-
-        module_list = SequenceTriple(type_, np1, (np1, np2, np3)).recalculate_coordinate()
-
-        if init or self.__is_validate(module_list):
-            return np1, np2, np3
-
-        module_list = SequenceTriple(type_, p1, (p1, p2, p3)).recalculate_coordinate()
-        if rotate is not None:
-            p1[index].rotate(rotate)
-            p1[index].rotate(rotate)
-            p1[index].rotate(rotate)
-
-        return None, None, None
-
-    @staticmethod
-    def __swap(p1, p2, p3):
-        size = len(p1)
-        s1 = random.randint(0, size - 1)
-        s2 = random.randint(0, size - 1)
-
-        module1, module2 = p1[s1], p1[s2]
-        p1_index1, p1_index2 = p1.index(module1), p1.index(module2)
-        p2_index1, p2_index2 = p2.index(module1), p2.index(module2)
-        p3_index1, p3_index2 = p3.index(module1), p3.index(module2)
-
-        # permutation swap
-        p1[p1_index1], p1[p1_index2] = p1[p1_index2], p1[p1_index1]
-        p2[p2_index1], p2[p2_index2] = p2[p2_index2], p2[p2_index1]
-        p3[p3_index1], p3[p3_index2] = p3[p3_index2], p3[p3_index1]
-
-    @staticmethod
-    def __shift(p1, p2, p3):
-        size = len(p1)
-        index = random.randint(0, size - 1)
-        shift_size1 = random.randint(0, size - 1)
-        shift_size2 = random.randint(0, size - 1)
-        pair = random.randint(1, 3)
-
-        module_ = p1[index]
-        if pair == 1:
-            p1_index, p2_index = p1.index(module_), p2.index(module_)
-            p1_module, p2_module = p1.pop(p1_index), p2.pop(p2_index)
-            p1.insert(p1_index + shift_size1, p1_module)
-            p2.insert(p2_index + shift_size2, p2_module)
-        elif pair == 2:
-            p1_index, p3_index = p1.index(module_), p3.index(module_)
-            p1_module, p3_module = p1.pop(p1_index), p3.pop(p3_index)
-            p1.insert(p1_index + shift_size1, p1_module)
-            p3.insert(p3_index + shift_size2, p3_module)
-        else:
-            p2_index, p3_index = p2.index(module_), p3.index(module_)
-            p2_module, p3_module = p2.pop(p2_index), p3.pop(p3_index)
-            p2.insert(p2_index + shift_size1, p2_module)
-            p3.insert(p3_index + shift_size2, p3_module)
-
-    @staticmethod
-    def __rotate(p1, p2, p3):
-        size = len(p1)
-        index = random.randint(0, size - 1)
-        axis = random.randint(1, 3)
-        rotate_module = p1[index]
-
-        if axis == 1:
-            if rotate_module.rotate('X'):
-                return index, 'X'
-        elif axis == 2:
-            if rotate_module.rotate('Y'):
-                return index, 'Y'
-        else:
-            if rotate_module.rotate('Z'):
-                return index, 'Z'
-
-        return index, None
+         初期配置を生成する
+         :param module_list Moduleの配列
+         """
+        # adjust position and create cross id set map
+        new_pos = Vector3D(0, 0, 0)
+        for module_ in module_list:
+            # adjust position
+            module_.set_position(Vector3D(new_pos.x, new_pos.y, new_pos.z), True)
+            new_pos.incz(module_.depth)
 
     @staticmethod
     def __should_change(delta, t):
@@ -339,21 +135,54 @@ class Relocation:
         return 0
 
     @staticmethod
-    def __is_validate(module_list):
-        used_node = {}
+    def __is_validate(module_list, cross_id_set):
+        edge_map = {}
+        connect_edge = defaultdict(list)
         for module_ in module_list:
-            for edge in module_.cross_edge_list:
-                node1, node2 = edge.node1, edge.node2
-                if node1 in used_node:
-                    if edge.id != used_node[node1]:
-                        return False
-                if node2 in used_node:
-                    if edge.id != used_node[node2]:
-                        return False
-                if node1 not in used_node:
-                    used_node[node1] = edge.id
-                if node2 not in used_node:
-                    used_node[node2] = edge.id
+            for joint_pair in module_.joint_pair_list:
+                joint1, joint2 = joint_pair[0], joint_pair[1]
+                edge = joint_pair[2]
+
+                if joint1 in edge_map and joint2 in edge_map:
+                    connect_edge[edge_map[joint1]].extend(connect_edge[edge_map[joint2]])
+                    connect_edge[edge_map[joint1]].append(edge)
+                    del_edge = edge_map[joint2]
+
+                    for edge in connect_edge[edge_map[joint2]]:
+                        node1, node2 = edge.node1, edge.node2
+                        edge_map[node1] = edge_map[joint1]
+                        edge_map[node2] = edge_map[joint1]
+
+                    del connect_edge[del_edge]
+
+                elif joint1 in edge_map:
+                    edge_map[joint2] = edge_map[joint1]
+                    connect_edge[edge_map[joint1]].append(edge)
+
+                elif joint2 in edge_map:
+                    edge_map[joint1] = edge_map[joint2]
+                    connect_edge[edge_map[joint2]].append(edge)
+
+                else:
+                    edge_map[joint1] = edge
+                    edge_map[joint2] = edge
+                    connect_edge[edge].append(edge)
+
+        id_set = copy.deepcopy(cross_id_set)
+        for key_edge, edge_list in sorted(connect_edge.items(), key=lambda x: len(x[1]), reverse=True):
+            if len(edge_list) == 1:
+                break
+            result = id_set[edge_list[0].module_id]
+            for edge in edge_list:
+                tmp = id_set[edge.module_id]
+                result = result & tmp
+
+            if len(result) == 0:
+                return False
+
+            del_num = result.pop()
+            for edge in edge_list:
+                id_set[edge.module_id].remove(del_num)
 
         return True
 
@@ -367,7 +196,7 @@ class Relocation:
         graph.set_loop_count(self._graph.loop_count)
         added_node = {}
         for module_ in module_list:
-            for edge in module_.edge_list + module_.cross_edge_list:
+            for edge in module_.edge_list:
                 color = edge.color
                 node1 = added_node[edge.node1] if edge.node1 in added_node else edge.node1
                 node2 = added_node[edge.node2] if edge.node2 in added_node else edge.node2
@@ -399,6 +228,52 @@ class Relocation:
                         if edge.z == candidate_edge.z and edge.x < candidate_edge.x:
                             candidate_edge = edge
                 candidate_edge.set_category(category)
+
+    @staticmethod
+    def __deep_copy_module_list(module_list):
+        result = []
+        for m in module_list:
+            module_ = Module(m.id)
+
+            # set frame edge
+            first = True
+            first_node = None
+            last_node = None
+            for node in m.frame_node_list:
+                n = Node(node.x, node.y, node.z, node.id, node.type)
+                if first:
+                    first_node = n
+                    first = False
+                if last_node is not None:
+                    edge = Edge(n, last_node, "edge", n.id)
+                    module_.add_frame_edge(edge)
+                last_node = n
+            edge = Edge(first_node, last_node, "edge", first_node.id)
+            module_.add_frame_edge(edge)
+
+            # set cross edge
+            for joint_pair in m.joint_pair_list:
+                joint1 = Joint(joint_pair[0].x, joint_pair[0].y, joint_pair[0].z, joint_pair[0].id, joint_pair[0].type)
+                joint2 = Joint(joint_pair[1].x, joint_pair[1].y, joint_pair[1].z, joint_pair[1].id, joint_pair[1].type)
+                cross_edge = CrossEdge(joint1, joint2, "edge", joint_pair[2].id, joint_pair[2].module_id)
+                module_.add_cross_node(joint1)
+                module_.add_cross_node(joint2)
+                module_.add_cross_edge(cross_edge)
+                module_.add_joint_pair((joint1, joint2, cross_edge))
+
+            # set id set
+            for id_ in m.cross_id_list:
+                m.add_cross_id(id_)
+
+            # set size and pos
+            module_.set_inner_size(m.inner_width, m.inner_height, m.inner_depth)
+            module_.set_size(m.width, m.height, m.depth)
+            module_.set_inner_position(Vector3D(m.inner_pos.x, m.inner_pos.y, m.inner_pos.z))
+            module_.set_position(Vector3D(m.pos.x, m.pos.y, m.pos.z))
+
+            result.append(module_)
+
+        return result
 
     @staticmethod
     def __new__node(node):
@@ -463,7 +338,3 @@ class Relocation:
                   0x00ff00, 0xffff00, 0x8b0000, 0xff1493, 0x800080]
         return colors[loop_id % 10]
 
-    def debug(self):
-        print("--- module list ---")
-        for module_ in self._module_list:
-            module_.debug()

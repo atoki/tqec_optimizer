@@ -1,6 +1,6 @@
 import math
 
-from ..position import Position
+from ..vector3d import Vector3D
 
 
 class Loop:
@@ -14,7 +14,7 @@ class Loop:
         :param loop_id モジュールを構成する閉路の番号
         """
         self._id = loop_id
-        self._pos = Position()
+        self._pos = Vector3D()
         self._width = 0
         self._height = 0
         self._depth = 0
@@ -66,7 +66,9 @@ class Loop:
         self._edge_list.append(edge)
 
     def add_cross(self, cross_loop_id):
-        if cross_loop_id not in self._cross_list:
+        if cross_loop_id in self._cross_list:
+            self._cross_list.remove(cross_loop_id)
+        else:
             self._cross_list.append(cross_loop_id)
 
     def add_injector(self, injector):
@@ -121,7 +123,7 @@ class Loop:
         self._height = max_y - min_y
         self._depth = max_z - min_z
 
-    def debug(self):
+    def dump(self):
         print("-----  loop id: {} -----".format(self._id))
         print("type          = {}".format(self._edge_list[0].node1.type))
         print("edge list     = {}".format(len(self._edge_list)))

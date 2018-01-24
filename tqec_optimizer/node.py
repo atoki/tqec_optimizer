@@ -1,4 +1,4 @@
-from .position import Position
+from .vector3d import Vector3D
 
 
 class Node:
@@ -17,7 +17,7 @@ class Node:
         """
         self._id = id_
         self._type = type_
-        self._pos = Position(x, y, z)
+        self._pos = Vector3D(x, y, z)
         self._edge_list = []
         self._color = 0
 
@@ -32,6 +32,9 @@ class Node:
 
     def __eq__(self, other):
         return (self._pos.x, self._pos.y, self._pos.z) == (other.x, other.y, other.z)
+
+    def set_id(self, id_):
+        self._id = id_
 
     def set_type(self, type_):
         self._type = type_
@@ -87,17 +90,18 @@ class Node:
     def edge_list(self):
         return self._edge_list
 
-    def debug(self):
+    def dump(self):
         print("type: {} id: {} ({}, {}, {})".format(self._type, self._id, self._pos.x, self._pos.y, self._pos.z))
 
 
 class Joint(Node):
     def __init__(self, x, y, z, id_=0, type_="none"):
         super().__init__(x, y, z, id_, type_)
-        self._target_node = None
+        self._id_set = set()
 
-    def set_target_node(self, target_node):
-        self._target_node = target_node
+    def set_id_set(self, id_set):
+        self._id_set = id_set
 
-    def target_node(self):
-        return self._target_node
+    @property
+    def id_set(self):
+        return self._id_set

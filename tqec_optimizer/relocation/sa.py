@@ -11,7 +11,7 @@ class SA:
         self._route = route_list
         self._invalidate_pair = invalidate_pair
         self._dist_table = {}
-        self._space = 2
+        self._space = 1
         self._invalid_edge = {}
 
         (max_x, max_y, max_z) = (0, 0, 0)
@@ -20,7 +20,9 @@ class SA:
             max_y = max(max_y, node.y)
             max_z = max(max_z, node.z)
 
-        self._size = (max_x + self._space, max_y + self._space, max_z + self._space)
+        self._size = ((-self._space, max_x + self._space),
+                      (-self._space, max_y + self._space),
+                      (-self._space, max_z + self._space))
         self.__create_used_node_array(max_x, max_y, max_z)
         self.__create_invalid_edge_array()
         self.__create_dist_table()
@@ -104,10 +106,12 @@ class SA:
                 else:
                     route = BestFirstSearch(self._route[i],
                                             self._route[j],
+                                            1,
+                                            None,
                                             self._used_node_array,
-                                            self._invalid_edge,
                                             self._size,
-                                            self._space).search()
+                                            self._space,
+                                            True).search()
                     dist = (len(route) - 1) * 2.0
                     self._dist_table[(self._route[i], self._route[j])] = dist
                     self._dist_table[(self._route[j], self._route[i])] = dist
