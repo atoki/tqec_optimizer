@@ -65,6 +65,9 @@ class Braidpack:
 
         # delete node
         for index in non_loop_node_index:
+            has_injector = False
             for edge in self._graph.node_list[index].edge_list:
-                if not edge.is_injector():
-                    del self._graph.node_list[index]
+                if edge.is_injector():
+                    has_injector = True
+            if not has_injector:
+                del self._graph.node_list[index]
