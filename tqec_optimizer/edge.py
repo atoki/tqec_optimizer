@@ -112,7 +112,7 @@ class Edge:
         return direction
 
     def dump(self):
-        print("type: {} id: {} category: {} ({}, {}, {}) -> ({}, {}, {})".format(self._node1.type, self._category, self._id,
+        print("type: {} id: {} category: {} ({}, {}, {}) -> ({}, {}, {})".format(self._node1.type, self._id, self._category,
                                                                                  self._node1.x, self._node1.y, self._node1.z,
                                                                                  self._node2.x, self._node2.y, self._node2.z))
 
