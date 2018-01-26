@@ -37,9 +37,6 @@ class Relocation:
             if edge.is_injector():
                 self._injector_list[edge.id].append(edge.category)
 
-        for id_, category in self._injector_list.items():
-            print("{} is {}".format(id_, category))
-
     def execute(self):
         """
         Sequence-Tripleを用いたSAによる再配置を行う
@@ -85,6 +82,8 @@ class Relocation:
         limit = 100
 
         self.__create_initial_placement(module_list)
+        graph = self.__to_graph(module_list)
+        CircuitWriter(graph).write("module-list.json")
         current_cost = TqecEvaluator(module_list).evaluate()
         place = SequenceTriple(module_list)
         place.build_permutation()
@@ -222,17 +221,11 @@ class Relocation:
 
         :param graph グラフ
         """
-        for id_, category in self._injector_list.items():
-            print("{} is {}".format(id_, category))
         for id_, category_list in self._injector_list.items():
             edge_list = []
             for edge in graph.edge_list:
-                print("id: {}".format(edge.id))
                 if id_ == edge.id:
                     edge_list.append(edge)
-            print("-- id({}) --".format(id_))
-            for edge in edge_list:
-                edge.dump()
             candidate_edge = graph.edge_list[0]
             for category in category_list:
                 for edge in edge_list:
@@ -254,20 +247,18 @@ class Relocation:
             module_ = Module(m.id)
 
             # set frame edge
-            first = True
-            first_node = None
-            last_node = None
-            for node in m.frame_node_list:
-                n = Node(node.x, node.y, node.z, node.id, node.type)
-                if first:
-                    first_node = n
-                    first = False
-                if last_node is not None:
-                    edge = Edge(n, last_node, "edge", n.id)
-                    module_.add_frame_edge(edge)
-                last_node = n
-            edge = Edge(first_node, last_node, "edge", first_node.id)
-            module_.add_frame_edge(edge)
+            added_node = {}
+            for edge in m.frame_edge_list:
+                node1 = added_node[edge.node1] if edge.node1 in added_node \
+                    else Node(edge.node1.x, edge.node1.y, edge.node1.z, edge.node1.id, edge.node1.type)
+                node2 = added_node[edge.node2] if edge.node2 in added_node \
+                    else Node(edge.node2.x, edge.node2.y, edge.node2.z, edge.node2.id, edge.node2.type)
+                frame_edge = Edge(node1, node2, edge.category, m.id)
+                module_.add_frame_edge(frame_edge)
+                if edge.node1 not in added_node:
+                    added_node[edge.node1] = node1
+                if edge.node2 not in added_node:
+                    added_node[edge.node2] = node2
 
             # set cross edge
             for joint_pair in m.joint_pair_list:

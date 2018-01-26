@@ -6,14 +6,16 @@ from ..edge import Edge, CrossEdge
 
 
 class ModuleFactory:
-    def __init__(self, type_, loop):
+    def __init__(self, type_, loop, injector_list):
         self._type = type_
         self._loop = loop
+        self._injector_list = injector_list
         self._module = Module(self._loop.id)
 
     def create(self):
         self.__create_frame()
         self.__create_cross_edge()
+        self.__create_injector()
         self._module.update()
 
         return self._module
@@ -39,9 +41,10 @@ class ModuleFactory:
 
         # create frame edge
         last_node = None
-        for node in node_array:
+        for n, node in enumerate(node_array):
             if last_node is not None:
-                edge = self.__new__edge("frame", node, last_node, "edge", self._loop.id)
+                category = self._injector_list.pop() if 2 + cross_edge_num + injector_num == n else "edge"
+                edge = self.__new__edge("frame", node, last_node, category, self._loop.id)
                 self._module.add_frame_edge(edge)
             last_node = node
         edge = self.__new__edge("frame", node_array[0], last_node, "edge", self._loop.id)
@@ -59,6 +62,23 @@ class ModuleFactory:
             self._module.add_joint_pair((joint1, joint2, cross_edge))
             pos1.incz(2)
             pos2.incz(2)
+
+    def __create_injector(self):
+        self._injector_list.clear()
+        cross_edge_num = max(1, len(self._loop.cross_list))
+        injector_num = max(0, len(self._loop.injector_list) - 1)
+        max_z = 2 * (cross_edge_num + injector_num)
+        for n in range(1, injector_num + 1):
+            node1 = self.__frame_node(0, 0, max_z - 2 * n)
+            node2 = self.__frame_node(0, 2, max_z - 2 * n)
+            injector = self.__new__edge("frame", node1, node2, "pin", self._loop.id)
+            self._module.add_frame_edge(injector)
+
+    def __frame_node(self, x, y, z):
+        for node in self._module.frame_node_list:
+            if node.x == x and node.y == y and node.z == z:
+                return node
+        return None
 
     def __new_node(self, category, pos, type_=None, id_=0, id_set=None):
         if category == "frame":
