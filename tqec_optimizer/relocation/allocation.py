@@ -13,7 +13,7 @@ class Allocation:
 
         # init
         for module_ in self._module_list:
-            for edge in module_.edge_list:
+            for edge in module_.cross_edge_list:
                 edge.set_id(0)
                 edge.node1.set_id(0)
                 edge.node2.set_id(0)
