@@ -40,7 +40,11 @@ class Node:
         self._type = type_
 
     def add_edge(self, edge):
-        self._edge_list.append(edge)
+        if edge not in self.edge_list:
+            self._edge_list.append(edge)
+
+    def remove_edge(self, edge):
+        self._edge_list.remove(edge)
 
     def set_color(self, color):
         self._color = color

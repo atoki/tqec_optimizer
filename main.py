@@ -9,6 +9,7 @@ from tqec_optimizer.circuit_reader import CircuitReader
 from tqec_optimizer.graph import Graph
 from tqec_optimizer.circuit_writer import CircuitWriter
 
+from tqec_optimizer.braidpack.braid_pack import Braidpack
 from tqec_optimizer.transformation.transformation import Transformation
 from tqec_optimizer.relocation.relocation import Relocation
 
@@ -17,6 +18,7 @@ def usage():
     print("usage:", sys.argv[0],)
     print("""
         -h|--help
+        -b|--bp execute braid pack
         -i|--input  FILE
         -o|--output FILE
         -t|--type   module type (dual or primal)
@@ -25,10 +27,11 @@ def usage():
 
 def main():
     try:
-        opts, args = getopt.getopt(sys.argv[1:], "h:i:o:t:", ["help", "input=", "output=", "type="])
+        opts, args = getopt.getopt(sys.argv[1:], "h:b:i:o:t:", ["help", "bp", "input=", "output=", "type="])
     except getopt.GetoptError:
         usage()
         sys.exit(2)
+    should_bp = False
     input_file = None
     output_file = None
     type_ = None
@@ -36,6 +39,8 @@ def main():
         if o in ("-h", "--help"):
             usage()
             sys.exit()
+        if o in ("-b", "--bp"):
+            should_bp = True
         if o in ("-i", "--input"):
             input_file = a
         if o in ("-o", "--output"):
@@ -55,14 +60,18 @@ def main():
     CircuitWriter(graph).write("1-init.json")
     print("first cost: {}".format(evaluate(graph)))
 
-    # optimization of non topology
-    loop_list = Transformation(graph).execute()
-    CircuitWriter(graph).write("2-transform.json")
+    if should_bp:
+        # braid pack
+        graph = Braidpack(graph).execute()
+    else:
+        # optimization of non topology
+        loop_list = Transformation(graph).execute()
+        CircuitWriter(graph).write("2-transform.json")
 
-    # optimization of topology
-    graph = Relocation(type_, loop_list, graph).execute()
+        # optimization of topology
+        graph = Relocation(type_, loop_list, graph).execute()
+
     print("result cost: {}".format(evaluate(graph)))
-
     # output
     CircuitWriter(graph).write(output_file)
 
