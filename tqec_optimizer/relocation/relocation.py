@@ -37,12 +37,16 @@ class Relocation:
             if edge.is_injector():
                 self._injector_list[edge.id].append(edge.category)
 
+        for id_, category in self._injector_list.items():
+            print("{} is {}".format(id_, category))
+
     def execute(self):
         """
         Sequence-Tripleを用いたSAによる再配置を行う
         """
         # create module list
-        module_list = [ModuleFactory(self._type, loop).create() for loop in self._loop_list if loop.type == self._type]
+        module_list = [ModuleFactory(self._type, loop, self._injector_list[loop.id]).create()
+                       for loop in self._loop_list if loop.type == self._type]
         self._cross_id_set = {module_.id: set(module_.cross_id_list) for module_ in module_list}
 
         # 各モジュールの配置決定
@@ -218,14 +222,28 @@ class Relocation:
 
         :param graph グラフ
         """
+        for id_, category in self._injector_list.items():
+            print("{} is {}".format(id_, category))
         for id_, category_list in self._injector_list.items():
+            edge_list = []
+            for edge in graph.edge_list:
+                print("id: {}".format(edge.id))
+                if id_ == edge.id:
+                    edge_list.append(edge)
+            print("-- id({}) --".format(id_))
+            for edge in edge_list:
+                edge.dump()
+            candidate_edge = graph.edge_list[0]
             for category in category_list:
-                candidate_edge = graph.edge_list[0]
-                for edge in graph.edge_list:
-                    if edge.id == id_ and not edge.is_injector():
+                for edge in edge_list:
+                    if not edge.is_injector():
                         if edge.z > candidate_edge.z:
                             candidate_edge = edge
                         if edge.z == candidate_edge.z and edge.x < candidate_edge.x:
+                            candidate_edge = edge
+                        if edge.z == candidate_edge.z \
+                                and edge.x == candidate_edge.x \
+                                and edge.y > candidate_edge.y:
                             candidate_edge = edge
                 candidate_edge.set_category(category)
 
