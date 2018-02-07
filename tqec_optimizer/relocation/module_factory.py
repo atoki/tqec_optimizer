@@ -21,6 +21,7 @@ class ModuleFactory:
         return self._module
 
     def __create_frame(self):
+        has_injector = True if len(self._injector_list) > 0 else False
         cross_edge_num = max(1, len(self._loop.cross_list))
         injector_num = max(0, len(self._loop.injector_list) - 1)
         node_array = []
@@ -43,7 +44,9 @@ class ModuleFactory:
         last_node = None
         for n, node in enumerate(node_array):
             if last_node is not None:
-                category = self._injector_list.pop() if 2 + cross_edge_num + injector_num == n else "edge"
+                category = self._injector_list.pop() \
+                    if 2 + cross_edge_num + injector_num == n and has_injector \
+                    else "edge"
                 edge = self.__new__edge("frame", node, last_node, category, self._loop.id)
                 self._module.add_frame_edge(edge)
             last_node = node
