@@ -23,10 +23,6 @@ class Transformation:
         self.__create_loop()
 
     def execute(self):
-        for loop in self._loop_list:
-            reduction = self.__rule2(loop)
-            if reduction:
-                break
         reduction = True
         no = 1
         while reduction:
