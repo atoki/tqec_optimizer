@@ -1,29 +1,124 @@
 {
-  "bits"   : [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14],
-  "inputs" : [],
+  "bits"   : [0, 1, 2, 3, 4, 5, 6, 7],
   "outputs": [0],
   "initializations": [
-      {
-          "bit" : 0,
-          "type": "x"
-      }
+    {
+      "bit" : 0,
+      "type": "x"
+    },
+    {
+      "bit" : 1,
+      "type": "x"
+    },
+    {
+      "bit" : 2,
+      "type": "x"
+    },
+    {
+      "bit" : 3,
+      "type": "z"
+    },
+    {
+      "bit" : 4,
+      "type": "x"
+    },
+    {
+      "bit" : 5,
+      "type": "z"
+    },
+    {
+      "bit" : 6,
+      "type": "z"
+    },
+    {
+      "bit" : 7,
+      "type": "z"
+    }
   ],
   "measurements": [
-      {
-          "bit" : 1,
-          "type": "x"
-      }
-
+    {
+      "bit" : 1,
+      "type": "x"
+    },
+    {
+      "bit" : 2,
+      "type": "x"
+    },
+    {
+      "bit" : 3,
+      "type": "x"
+    },
+    {
+      "bit" : 4,
+      "type": "x"
+    },
+    {
+      "bit" : 5,
+      "type": "x"
+    },
+    {
+      "bit" : 6,
+      "type": "x"
+    },
+    {
+      "bit" : 7,
+      "type": "x"
+    }
   ],
-  "cnots": [
-      {
-          "controls": [0],
-          "targets" : [6]
-      },
-      {
-          "controls": [2],
-          "targets" : [4]
-      }
+  "operations": [
+    {
+      "type": "cnot",
+      "control": 0,
+      "targets" : [3]
+    },
+    {
+      "type": "cnot",
+      "control": 3,
+      "targets" : [5, 6]
+    },
+    {
+      "type": "cnot",
+      "control": 4,
+      "targets" : [5, 6, 7]
+    },
+    {
+      "type": "cnot",
+      "control": 2,
+      "targets" : [3, 6, 7]
+    },
+    {
+      "type": "cnot",
+      "control": 1,
+      "targets" : [3, 5, 7]
+    },
+    {
+      "type": "s",
+      "target": 1
+    },
+    {
+      "type": "s",
+      "target": 2
+    },
+    {
+      "type": "s",
+      "target": 3
+    },
+    {
+      "type": "s",
+      "target": 4
+    },
+    {
+      "type": "s",
+      "target": 5
+    },
+    {
+      "type": "s",
+      "target": 6
+    },
+    {
+      "type": "s",
+      "target": 7
+    }
   ]
 }
 
