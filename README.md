@@ -3,17 +3,17 @@
 
 ## Requirements
 * Python 3.0 or later
-* etc...
+* docopt
 
 ## Usage
 任意の量子回路が表現されたJSONファイルを入力として, 
 tqec_viewerの入力フォーマットであるJSONファイルが出力される.
 ```
-$ python main.py -i [file.json] -o [file.json] -t [primal or dual]
+$ python3 main.py -i [file.json] -o [file.json] -t [primal or dual]
 ```
 既存手法を実行するには以下のコマンド
 ```
-$ python main.py -bp -i [file.json] -o [file.json]
+$ python3 main.py -b -i [file.json] -o [file.json]
 ```
 ## Project layout
 ```
