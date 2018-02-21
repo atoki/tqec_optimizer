@@ -49,14 +49,10 @@ class Relocation:
         # 各モジュールの配置決定
         result = self.__sa_relocation(module_list)
 
-        graph = self.__to_graph(result)
-        CircuitWriter(graph).write("4-relocation.json")
-
         # 各辺に対するidの割当を決定
         Allocation(result, self._cross_id_set).execute()
         print("allocation is completed")
         graph = self.__to_graph(result)
-        CircuitWriter(graph).write("5-allocation.json")
 
         # 各辺の接合部の接続割当を決定
         route_pair = TSP(graph, result).search()
@@ -82,8 +78,6 @@ class Relocation:
         limit = 100
 
         self.__create_initial_placement(module_list)
-        graph = self.__to_graph(module_list)
-        CircuitWriter(graph).write("module-list.json")
         current_cost = TqecEvaluator(module_list).evaluate()
         place = SequenceTriple(module_list)
         place.build_permutation()

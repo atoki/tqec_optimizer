@@ -49,15 +49,15 @@ def main():
             type_ = a
 
     if output_file is None:
-        output_file = "6-result.json"
+        output_file = "result.json"
 
     if type_ is None:
-        type_ = "dual"
+        type_ = "primal"
 
     # preparation
     circuit = CircuitReader().read_circuit(input_file)
     graph = Graph(circuit)
-    CircuitWriter(graph).write("1-init.json")
+    CircuitWriter(graph).write("init.json")
     print("first cost: {}".format(evaluate(graph)))
 
     if should_bp:
@@ -66,7 +66,6 @@ def main():
     else:
         # optimization of non topology
         loop_list = Transformation(graph).execute()
-        CircuitWriter(graph).write("2-transform.json")
 
         # optimization of topology
         graph = Relocation(type_, loop_list, graph).execute()
