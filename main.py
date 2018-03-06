@@ -1,9 +1,22 @@
 #! /usr/bin/env python
 # -*- coding: utf-8 -*-
 
-import sys
+__doc__ = """
+Usage:
+    {f} [-i | --input <input_file>] [-o | --output <output_file>] [-t | --type <type>]
+    {f} [-b | --bp] [-i | --input <input_file>] [-o | --output <output_file>]
+    {f} -h | --help
+
+Options:
+    -i --input=<input_file>     input file
+    -o --output=<output_file>   output file     [default: result.json]
+    -t --type=<type>            split type      [default: primal]
+    -h --help                   show this screen
+""".format(f=__file__)
+
+
 import math
-import getopt
+from docopt import docopt
 
 from tqec_optimizer.circuit_reader import CircuitReader
 from tqec_optimizer.graph import Graph
@@ -14,59 +27,25 @@ from tqec_optimizer.transformation.transformation import Transformation
 from tqec_optimizer.relocation.relocation import Relocation
 
 
-def usage():
-    print("usage:", sys.argv[0],)
-    print("""
-        -h|--help
-        -b|--bp execute braid pack
-        -i|--input  FILE
-        -o|--output FILE
-        -t|--type   module type (dual or primal)
-        """)
-
-
 def main():
-    try:
-        opts, args = getopt.getopt(sys.argv[1:], "h:b:i:o:t:", ["help", "bp", "input=", "output=", "type="])
-    except getopt.GetoptError:
-        usage()
-        sys.exit(2)
-    should_bp = False
-    input_file = None
-    output_file = None
-    type_ = None
-    for o, a in opts:
-        if o in ("-h", "--help"):
-            usage()
-            sys.exit()
-        if o in ("-b", "--bp"):
-            should_bp = True
-        if o in ("-i", "--input"):
-            input_file = a
-        if o in ("-o", "--output"):
-            output_file = a
-        if o in ("-t", "--type"):
-            type_ = a
-
-    if output_file is None:
-        output_file = "6-result.json"
-
-    if type_ is None:
-        type_ = "dual"
+    args = docopt(__doc__)
+    input_file = args['--input'][0]
+    output_file = args['--output'][0]
+    type_ = args['--type'][0]
+    braid_pack = args['-b'] or args['--bp']
 
     # preparation
     circuit = CircuitReader().read_circuit(input_file)
     graph = Graph(circuit)
-    CircuitWriter(graph).write("1-init.json")
+    CircuitWriter(graph).write("init.json")
     print("first cost: {}".format(evaluate(graph)))
 
-    if should_bp:
+    if braid_pack:
         # braid pack
         graph = Braidpack(graph).execute()
     else:
         # optimization of non topology
         loop_list = Transformation(graph).execute()
-        CircuitWriter(graph).write("2-transform.json")
 
         # optimization of topology
         graph = Relocation(type_, loop_list, graph).execute()
