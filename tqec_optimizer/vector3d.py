@@ -1,5 +1,5 @@
 class Vector3D:
-    def __init__(self, x=0, y=0, z=0):
+    def __init__(self, x=0.0, y=0.0, z=0.0):
         self._x = x
         self._y = y
         self._z = z
@@ -41,6 +41,14 @@ class Vector3D:
 
     def to_array(self):
         return [self._x, self._y, self._z]
+
+    def dist(self, pos):
+        """
+        マンハッタン距離
+
+        :param pos 対象となる座標
+        """
+        return abs(self._x - pos.x) + abs(self._y - pos.y) + abs(self._z - pos.z)
 
     def dump(self):
         print("pos (", self._x, ",", self._y, ",", self.z, ")")
