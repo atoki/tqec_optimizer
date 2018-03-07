@@ -20,6 +20,8 @@ class Loop:
         self._depth = 0
         self._edge_list = []
         self._cross_list = []
+        self._cap_list = []
+        self._pin_list = []
         self._injector_list = []
 
     @property
@@ -55,6 +57,14 @@ class Loop:
         return self._cross_list
 
     @property
+    def cap_list(self):
+        return self._cap_list
+
+    @property
+    def pin_list(self):
+        return self._pin_list
+
+    @property
     def injector_list(self):
         return self._injector_list
 
@@ -71,8 +81,18 @@ class Loop:
         else:
             self._cross_list.append(cross_loop_id)
 
+    def add_cap(self, cap):
+        self._cap_list.append(cap)
+
+    def add_pin(self, pin):
+        self._pin_list.append(pin)
+
     def add_injector(self, injector):
         self._injector_list.append(injector)
+        if injector.category == "cap":
+            self.add_cap(injector)
+        else:
+            self.add_pin(injector)
 
     def remove_cross(self, cross_loop_id):
         self._cross_list.remove(cross_loop_id)
@@ -97,7 +117,7 @@ class Loop:
                     candidate_edge = edge
 
         candidate_edge.set_category(category)
-        self._injector_list.append(candidate_edge)
+        self.add_injector(candidate_edge)
 
     def update(self):
         """

@@ -20,6 +20,8 @@ class Module:
         self._cross_edge_list = []
         self._cross_id_list = set()
         self._joint_pair_list = []
+        self._cap_list = []
+        self._pin_list = []
         self._pos = Vector3D()
         self._inner_pos = Vector3D()
         self._width = 0
@@ -97,6 +99,20 @@ class Module:
     def joint_pair_list(self):
         return self._joint_pair_list
 
+    @property
+    def cap_list(self):
+        return self._cap_list
+
+    @property
+    def pin_list(self):
+        return self._pin_list
+
+    def has_cap(self):
+        return len(self._cap_list) > 0
+
+    def has_pin(self):
+        return len(self._pin_list) > 0
+
     def add_frame_node(self, node):
         self._frame_node_list.append(node)
 
@@ -114,6 +130,18 @@ class Module:
 
     def add_joint_pair(self, joint_pair):
         self._joint_pair_list.append(joint_pair)
+
+    def add_cap(self, cap):
+        self._cap_list.append(cap)
+
+    def add_pin(self, pin):
+        self._pin_list.append(pin)
+
+    def add_injector(self, injector):
+        if injector == "cap":
+            self.add_cap(injector)
+        else:
+            self.add_pin(injector)
 
     def set_inner_size(self, inner_width, inner_height, inner_depth):
         self._inner_width = inner_width

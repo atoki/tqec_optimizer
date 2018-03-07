@@ -13,6 +13,10 @@ class ModuleFactory:
         self._module = Module(self._loop.id)
 
     def create(self):
+        # update injector info
+        for injector in self._injector_list:
+            self._module.add_injector(injector)
+
         self.__create_frame()
         self.__create_cross_edge()
         self.__create_injector()

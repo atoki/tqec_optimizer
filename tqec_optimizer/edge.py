@@ -96,6 +96,16 @@ class Edge:
         else:
             assert False
 
+    def is_cap(self):
+        if self._category == "cap":
+            return True
+        return False
+
+    def is_pin(self):
+        if self._category == "pin":
+            return True
+        return False
+
     def is_injector(self):
         if self._category == "pin" or self._category == "cap":
             return True
