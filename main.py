@@ -46,6 +46,7 @@ def main():
     else:
         # optimization of non topology
         loop_list = Transformation(graph).execute()
+        CircuitWriter(graph).write("transform.json")
 
         # optimization of topology
         graph = Relocation(type_, loop_list, graph).execute()
