@@ -119,7 +119,7 @@ class Graph:
                 loop_id = self.__new_loop_variable()
                 node1 = self.__node(init["bit"] * 2, 0, 0)
                 node2 = self.__node(init["bit"] * 2, 2, 0)
-                self.__new__edge(node1, node2, "bridge", loop_id)
+                self.__new__edge(node1, node2, "zi", loop_id)
                 self.__assign_line_id(init["bit"] * 2, 0, loop_id)
 
     def __create_measurements(self):
@@ -141,14 +141,54 @@ class Graph:
                 self.__new__edge(upper_node1, upper_node2, "line")
                 self.__new__edge(lower_node1, lower_node2, "line")
 
-                # X基底の観測直前にZ基底の観測、ピンがなければ閉じていないループの番号を0に上書きする
-                remove = True
-                for edge in upper_node1.edge_list:
-                    if edge.category == "bridge" or edge.is_injector():
-                        remove = False
-                if remove:
-                    loop_id = self.__get_front_edge_loop_id(meas["bit"] * 2, self._circuit.length)
-                    self.__remove_loop_id(loop_id)
+                # X基底の観測前にPinがなければ閉じていないループの番号を0に上書きする
+                last_edge = upper_node2.edge_list[0]
+                next_node = None
+                current_node = upper_node1
+                last_node = upper_node2
+                while last_edge.type != "zi":
+                    next_edge = None
+                    has_pin = False
+                    for edge in current_node.edge_list:
+                        if edge.is_pin():
+                            has_pin = True
+                            break
+
+                        if edge.alt_node(current_node) != last_node:
+                            next_node = edge.alt_node(current_node)
+                            next_edge = edge
+
+                    if has_pin:
+                        break
+
+                    last_node = current_node
+                    current_node = next_node
+                    last_edge = next_edge
+                    last_edge.set_id(0)
+
+                last_edge = lower_node2.edge_list[0]
+                next_node = None
+                current_node = lower_node1
+                last_node = lower_node2
+                while last_edge.type != "zi":
+                    next_edge = None
+                    has_pin = False
+                    for edge in current_node.edge_list:
+                        if edge.is_pin():
+                            has_pin = True
+                            break
+
+                        if edge.alt_node(current_node) != last_node:
+                            next_node = edge.alt_node(current_node)
+                            next_edge = edge
+
+                    if has_pin:
+                        break
+
+                    last_node = current_node
+                    current_node = next_node
+                    last_edge = next_edge
+                    last_edge.set_id(0)
 
     def __create_inputs(self):
         """
@@ -234,12 +274,12 @@ class Graph:
         loop_id = self.__get_front_edge_loop_id(cbit_no * space, z + 3 - 1)
         upper = self.__node(cbit_no * space, 2, z + 3 - 1)
         lower = self.__node(cbit_no * space, 0, z + 3 - 1)
-        primal_edge1 = self.__new__edge(upper, lower, "line", loop_id)
+        primal_edge1 = self.__new__edge(upper, lower, "zm", loop_id)
 
         loop_id = self.__new_loop_variable()
         upper = self.__node(cbit_no * space, 2, z + 3 + 1)
         lower = self.__node(cbit_no * space, 0, z + 3 + 1)
-        primal_edge2 = self.__new__edge(upper, lower, "line", loop_id)
+        primal_edge2 = self.__new__edge(upper, lower, "zi", loop_id)
         self.__assign_line_id(cbit_no * space, z + 3 + 1, loop_id)
 
         # ブレイディングの作成
