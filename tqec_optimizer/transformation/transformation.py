@@ -50,8 +50,6 @@ class Transformation:
                     no += 1
                     break
 
-        self.__color_loop()
-
         print("non topological deforming is completed")
         return self._loop_list
 
@@ -260,7 +258,7 @@ class Transformation:
         """
         for loop in self._loop_list:
             id_ = loop.id
-            color = self.__generate_random_color(id_)
+            color = self.__generate_color(id_)
             for edge in loop.edge_list:
                 edge.set_color(color)
                 edge.node1.set_color(color)
@@ -290,3 +288,46 @@ class Transformation:
         colors = [0xffdead, 0x808080, 0x191970, 0x0000ff, 0x00ffff, 0x008000,
                   0x00ff00, 0xffff00, 0x8b0000, 0xff1493, 0x800080]
         return colors[loop_id % 11]
+
+    @staticmethod
+    def __generate_color(loop_id):
+        colors = [0xfed552,  # tsubasa
+                  0x554171,  # emily
+                  0xee762e,  # tamaki
+                  0xea5b76,  # haruka
+                  0x6bb6b0,  # reika
+                  0xafa690,  # shiho
+                  0xd1342c,  # hinata
+                  0xe9739b,  # umi
+                  0x58a6dc,  # mnako
+                  0xb63b40,  # karen
+                  0x0bce92,  # erena
+                  0xd7385f,  # julia
+                  0xefb864,  # momoko
+                  0x7f6575,  # sayoko
+                  0x92cfbb,  # kotoha
+                  0xbee3e3,  # tomoka
+                  0x5abfb7,  # matsuri
+                  0x454341,  # megumi
+                  0x7278a7,  # huka
+                  0xf7e78e,  # iku
+                  0xaeb49c,  # subaru
+                  0xc7b83c,  # yuriko
+                  0xf19557,  # tizuru
+                  0xeb613f,  # akane
+                  0xed90ba,  # serika
+                  0xf1becd,  # konomi
+                  0xeceb70,  # noriko
+                  0xe25a9b,  # ayumu
+                  0x99b7dc,  # mizuki
+                  0xb54461,  # arisa
+                  0xd7a96b,  # miya
+                  0x6495cf,  # shizuka
+                  0x7e6ca8,  # anna
+                  0xf19591,  # rio
+                  0xf5ad3b,  # kana
+                  0x788bc5,  # nao
+                  0xfff03c   # roko
+                  ]
+
+        return colors[loop_id % 37]
