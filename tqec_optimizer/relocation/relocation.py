@@ -16,7 +16,6 @@ from ..vector3d import Vector3D
 from ..graph import Graph
 from ..node import Node, Joint
 from ..edge import Edge, CrossEdge
-from ..circuit_writer import CircuitWriter
 
 
 class Relocation:
@@ -89,7 +88,7 @@ class Relocation:
                 place.create_neighborhood()
                 candidate = place.recalculate_coordinate()
 
-                if not self.__is_validate(candidate, self._cross_id_set):
+                if not self.__is_valid(candidate, self._cross_id_set):
                     place.recover()
                     continue
 
@@ -132,7 +131,7 @@ class Relocation:
         return 0
 
     @staticmethod
-    def __is_validate(module_list, cross_id_set):
+    def __is_valid(module_list, cross_id_set):
         edge_map = {}
         connect_edge = defaultdict(list)
         for module_ in module_list:
