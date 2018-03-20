@@ -1,4 +1,12 @@
-cmake_minimum_required(VERSION 3.9)
-project(tqec_optimizer)
+cmake_minimum_required(VERSION 3.2)
 
-set(CMAKE_CXX_STANDARD 11)
+project(sample CXX)
+
+set(SUB_DIR ${CMAKE_CURRENT_SOURCE_DIR}/src)
+
+set(BIN_DIR ${CMAKE_CURRENT_SOURCE_DIR}/bin)
+
+unset(EXTERNAL_PROJECTS_INCLUDE_PATHS)
+
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${BIN_DIR}/placement)
+add_subdirectory(${SUB_DIR}/placement)
