@@ -2,6 +2,7 @@ import random
 import math
 import time
 import copy
+import json
 from collections import defaultdict
 
 from .module import Module
@@ -65,6 +66,21 @@ class Relocation:
         self.__add_injector(graph)
 
         return graph
+
+    def __placement(self):
+        loops = []
+        data = {"loops": loops}
+        for loop in self._loop_list:
+            if loop.type == self._type:
+                dic = {"id": loop.id,
+                       "type": loop.type,
+                       "cross": loop.cross_list,
+                       "pins": len(loop.pin_list),
+                       "caps": len(loop.cap_list)}
+                loops.append(dic)
+
+        with open("test.json", 'w') as outfile:
+            json.dump(data, outfile, indent=4)
 
     def __sa_relocation(self, module_list):
         """
