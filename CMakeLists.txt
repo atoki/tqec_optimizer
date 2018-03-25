@@ -8,5 +8,5 @@ set(BIN_DIR ${CMAKE_CURRENT_SOURCE_DIR}/bin)
 
 unset(EXTERNAL_PROJECTS_INCLUDE_PATHS)
 
-set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${BIN_DIR}/placement)
-add_subdirectory(${SUB_DIR}/placement)
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${BIN_DIR}/topology)
+add_subdirectory(${SUB_DIR}/topology)

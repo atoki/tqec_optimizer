@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.2)
 
 project(sample CXX)
 
-set(TARGETS placement)
+set(TARGETS topology)
 set(SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/src)
 
 if(NOT CMAKE_RUNTIME_OUTPUT_DIRECTORY)
