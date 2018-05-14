@@ -4,6 +4,7 @@
 #include <iostream>
 #include <vector>
 #include <string>
+#include <memory>
 #include <limits>
 
 #include "../graph/node.hpp"
@@ -17,15 +18,20 @@ public:
         Z
     };
 
+    using NodePtr = std::shared_ptr<Node>;
+    using EdgePtr = std::shared_ptr<Edge>;
+
 private:
     int id_;
     int pin_num_;
     int cap_num_;
 
-    std::vector<Node> frame_nodes_;
-    std::vector<Node> cross_nodes_;
-    std::vector<Edge> frame_edges_;
-    std::vector<Edge> cross_edges_;
+    std::vector<NodePtr> nodes_;
+    std::vector<NodePtr> frame_nodes_;
+    std::vector<NodePtr> cross_nodes_;
+    std::vector<EdgePtr> edges_;
+    std::vector<EdgePtr> frame_edges_;
+    std::vector<EdgePtr> cross_edges_;
     std::vector<int> cross_ids_;
 
     Vector3D pos_;
@@ -45,10 +51,12 @@ public:
     int id() const { return id_; }
     int pin_num() const { return pin_num_; }
     int cap_num() const { return cap_num_; }
-    std::vector<Node> frame_nodes() const { return frame_nodes_; }
-    std::vector<Node> cross_nodes() const { return cross_nodes_; }
-    std::vector<Edge> frame_edges() const { return frame_edges_; }
-    std::vector<Edge> cross_edges() const { return cross_edges_; }
+    std::vector<NodePtr> nodes() const { return nodes_; }
+    std::vector<NodePtr> frame_nodes() const { return frame_nodes_; }
+    std::vector<NodePtr> cross_nodes() const { return cross_nodes_; }
+    std::vector<EdgePtr> edges() const { return edges_; }
+    std::vector<EdgePtr> frame_edges() const { return frame_edges_; }
+    std::vector<EdgePtr> cross_edges() const { return cross_edges_; }
     std::vector<int> cross_ids() const { return cross_ids_; }
     Vector3D pos() const { return pos_; }
     Vector3D inner_pos() const { return inner_pos_; }
@@ -72,19 +80,23 @@ public:
         cap_num_++;
     }
 
-    void add_frame_node(const Node& node) {
+    void add_frame_node(const NodePtr node) {
+        nodes_.push_back(node);
         frame_nodes_.push_back(node);
     }
 
-    void add_cross_node(const Node& node) {
+    void add_cross_node(const NodePtr node) {
+        nodes_.push_back(node);
         cross_nodes_.push_back(node);
     }
 
-    void add_frame_edge(const Edge& edge) {
+    void add_frame_edge(const EdgePtr edge) {
+        edges_.push_back(edge);
         frame_edges_.push_back(edge);
     }
 
-    void add_cross_edge(const Edge& edge) {
+    void add_cross_edge(const EdgePtr edge) {
+        edges_.push_back(edge);
         cross_edges_.push_back(edge);
     }
 
@@ -97,11 +109,8 @@ public:
             const double diff_x = pos.x - pos_.x;
             const double diff_y = pos.y - pos_.y;
             const double diff_z = pos.z - pos_.z;
-            for (auto& node : frame_nodes_) {
-                node.move(diff_x, diff_y, diff_z);
-            }
-            for (auto& node : cross_nodes_) {
-                node.move(diff_x, diff_y, diff_z);
+            for (auto& node : nodes_) {
+                node->move(diff_x, diff_y, diff_z);
             }
             update();
         }
