@@ -26,13 +26,13 @@ private:
     int pin_num_;
     int cap_num_;
 
+    std::vector<int> cross_ids_;
     std::vector<NodePtr> nodes_;
     std::vector<NodePtr> frame_nodes_;
     std::vector<NodePtr> cross_nodes_;
     std::vector<EdgePtr> edges_;
     std::vector<EdgePtr> frame_edges_;
     std::vector<EdgePtr> cross_edges_;
-    std::vector<int> cross_ids_;
 
     Vector3D pos_;
     Vector3D inner_pos_;
@@ -46,6 +46,30 @@ public:
         id_ = id;
         pin_num_ = 0;
         cap_num_ = 0;
+    }
+
+    Module(const int id,
+           const std::vector<int> cross_ids,
+           const std::vector<NodePtr> frame_nodes,
+           const std::vector<NodePtr> cross_nodes,
+           const std::vector<EdgePtr> frame_edges,
+           const std::vector<EdgePtr> cross_edges) {
+        id_ = id;
+        pin_num_ = 0;
+        cap_num_ = 0;
+        cross_ids_ = std::move(cross_ids);
+        frame_nodes_ = std::move(frame_nodes);
+        cross_nodes_ = std::move(cross_nodes);
+        frame_edges_ = std::move(frame_edges);
+        cross_edges_ = std::move(cross_edges);
+
+        nodes_.insert(nodes_.begin(), frame_nodes_.begin(), frame_nodes_.end());
+        nodes_.insert(nodes_.end(), cross_nodes_.begin(), cross_nodes_.end());
+        edges_.insert(edges_.begin(), frame_edges_.begin(), frame_edges_.end());
+        edges_.insert(edges_.end(), cross_edges_.begin(), cross_edges_.end());
+
+        // update module position
+        update();
     }
 
     int id() const { return id_; }
