@@ -16,6 +16,7 @@ Options:
 
 
 import math
+import time
 from docopt import docopt
 
 from tqec_optimizer.circuit_reader import CircuitReader
@@ -39,6 +40,7 @@ def main():
     graph = Graph(circuit)
     CircuitWriter(graph).write("init.json")
     print("first cost: {}".format(evaluate(graph)))
+    start = time.time()
 
     if braid_pack:
         # braid pack
@@ -50,7 +52,10 @@ def main():
         # optimization of topology
         graph = Relocation(type_, loop_list, graph).execute()
 
+    elapsed_time = time.time() - start
     print("result cost: {}".format(evaluate(graph)))
+    print("total time: {}".format(elapsed_time))
+
     # output
     CircuitWriter(graph).write(output_file)
 
