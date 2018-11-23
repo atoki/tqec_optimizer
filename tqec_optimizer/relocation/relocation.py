@@ -46,21 +46,36 @@ class Relocation:
                        for loop in self._loop_list if loop.type == self._type]
         self._cross_id_set = {module_.id: set(module_.cross_id_list) for module_ in module_list}
 
+        start = time.time()
         # 各モジュールの配置決定
         result = self.__sa_relocation(module_list)
 
+        # 配置決定の所要時間
+        elapsed_time = time.time() - start
+        print("placement is completed")
+        print("配置所要時間: {}".format(elapsed_time))
+        start = time.time()
+
         # 各辺に対するidの割当を決定
         Allocation(result, self._cross_id_set).execute()
+        elapsed_time = time.time() - start
         print("allocation is completed")
+        print("Label割当所要時間: {}".format(elapsed_time))
+        start = time.time()
         graph = self.__to_graph(result)
 
         # 各辺の接合部の接続割当を決定
         route_pair = TSP(graph, result).search()
+        elapsed_time = time.time() - start
         print("TSP is completed")
+        print("接続部割当所要時間: {}".format(elapsed_time))
+        start = time.time()
 
         # 各ネットの結ぶ経路の決定
         Routing(graph, result, route_pair).execute()
+        elapsed_time = time.time() - start
         print("routing is completed")
+        print("配線所要時間: {}".format(elapsed_time))
 
         # injectorを復元
         self.__add_injector(graph)
@@ -76,16 +91,17 @@ class Relocation:
         final_t = 0.01
         cool_rate = 0.99
         limit = 100
+        count = 0
 
         self.__create_initial_placement(module_list)
         current_cost = TqecEvaluator(module_list).evaluate()
         place = SequenceTriple(module_list)
         place.build_permutation()
         t = initial_t
-        start = time.time()
         result = module_list
         while t > final_t:
             for n in range(limit):
+                count += 1
                 place.create_neighborhood()
                 candidate = place.recalculate_coordinate()
 
@@ -104,10 +120,7 @@ class Relocation:
                     place.recover()
             t *= cool_rate
 
-        elapsed_time = time.time() - start
-        print("処理時間: {}".format(elapsed_time))
-        print("relocation is completed")
-
+        print("試行回数: {}".format(count))
         return result
 
     @staticmethod
