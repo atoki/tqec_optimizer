@@ -20,7 +20,7 @@ class CircuitWriter:
         self.__make_logical_qubits()
         self.__make_edges_and_injectors()
 
-        data = {"logical_qubits": self._logical_qubits,
+        data = {"cubes": self._logical_qubits,
                 "edges": self._edges,
                 "injectors": self._injectors}
 
