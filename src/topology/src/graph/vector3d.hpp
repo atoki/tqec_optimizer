@@ -33,6 +33,19 @@ public:
         return *this;
     }
 
+    Vector3D& add(const double xx,
+                  const double yy,
+                  const double zz) {
+        x += xx;
+        y += yy;
+        z += zz;
+        return *this;
+    }
+
+    bool operator==(const Vector3D& other) {
+        return (this->x == other.x) && (this->y == other.y) && (this->z == other.z);
+    }
+
     double w() const { return this->x; }
     double h() const { return this->y; }
     double d() const { return this->z; }

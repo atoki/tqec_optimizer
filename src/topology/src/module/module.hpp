@@ -63,10 +63,10 @@ public:
         frame_edges_ = std::move(frame_edges);
         cross_edges_ = std::move(cross_edges);
 
-        nodes_.insert(nodes_.begin(), frame_nodes_.begin(), frame_nodes_.end());
-        nodes_.insert(nodes_.end(), cross_nodes_.begin(), cross_nodes_.end());
-        edges_.insert(edges_.begin(), frame_edges_.begin(), frame_edges_.end());
-        edges_.insert(edges_.end(), cross_edges_.begin(), cross_edges_.end());
+//        nodes_.insert(nodes_.begin(), frame_nodes_.begin(), frame_nodes_.end());
+//        nodes_.insert(nodes_.end(), cross_nodes_.begin(), cross_nodes_.end());
+//        edges_.insert(edges_.begin(), frame_edges_.begin(), frame_edges_.end());
+//        edges_.insert(edges_.end(), cross_edges_.begin(), cross_edges_.end());
 
         // update module position
         update();

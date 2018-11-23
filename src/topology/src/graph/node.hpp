@@ -4,6 +4,7 @@
 #include <iostream>
 #include <string>
 #include <cassert>
+#include <algorithm>
 
 #include "vector3d.hpp"
 
@@ -19,13 +20,12 @@ public:
     Node() = default;
 
     Node(const int id,
-         const Vector3D& pos,
-         const std::string type = "none") {
-        id_ = id;
-        type_ = type;
-        pos_ = pos;
-        color_ = 0;
-    }
+         const Vector3D pos,
+         const std::string type = "none")
+            : id_(id),
+              type_(type),
+              pos_(pos),
+              color_(0.0){ }
 
     bool operator==(const Node& other) const {
         return this->pos_.x == other.pos().x

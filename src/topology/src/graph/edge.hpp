@@ -32,17 +32,17 @@ public:
     Edge() = default;
 
     Edge(int id, const std::string& category,
-         const NodePtr& node1, const NodePtr& node2) {
-        id_ = id;
-        type_ = node1->type();
-        category_ = category;
-        node1_ = node1;
-        node2_ = node2;
+         const NodePtr& node1, const NodePtr& node2)
+            : id_(id),
+              type_(node1->type()),
+              category_(category),
+              node1_(node1),
+              node2_(node2),
+              color_(0.0) {
         pos_ = Vector3D((node1->pos().x + node2->pos().x) / 2.0,
                         (node1->pos().y + node2->pos().y) / 2.0,
                         (node1->pos().z + node2->pos().z) / 2.0);
         dir_ = calc_dir();
-        color_ = 0;
     }
 
     bool operator==(const Edge& other) {
