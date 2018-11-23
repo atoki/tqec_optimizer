@@ -23,32 +23,32 @@ class Transformation:
         self.__create_loop()
 
     def execute(self):
-        reduction = True
-        no = 1
-        while reduction:
-            for loop in self._loop_list:
-                reduction = self.__rule3(loop)
-                if reduction:
-                    no += 1
-                    break
-
-        reduction = True
-        no = 1
-        while reduction:
-            for loop in self._loop_list:
-                reduction = self.__rule2(loop)
-                if reduction:
-                    no += 1
-                    break
-
-        reduction = True
-        no = 1
-        while reduction:
-            for loop in self._loop_list:
-                reduction = self.__rule1(loop)
-                if reduction:
-                    no += 1
-                    break
+        # reduction = True
+        # no = 1
+        # while reduction:
+        #     for loop in self._loop_list:
+        #         reduction = self.__rule3(loop)
+        #         if reduction:
+        #             no += 1
+        #             break
+        #
+        # reduction = True
+        # no = 1
+        # while reduction:
+        #     for loop in self._loop_list:
+        #         reduction = self.__rule2(loop)
+        #         if reduction:
+        #             no += 1
+        #             break
+        #
+        # reduction = True
+        # no = 1
+        # while reduction:
+        #     for loop in self._loop_list:
+        #         reduction = self.__rule1(loop)
+        #         if reduction:
+        #             no += 1
+        #             break
 
         print("non topological deforming is completed")
         return self._loop_list
