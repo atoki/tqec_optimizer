@@ -23,10 +23,6 @@ private:
     void CreateCross(const Loop& loop,
                      std::vector<NodePtr>& cross_nodes,
                      std::vector<EdgePtr>& cross_edges);
-
-    void CreateInjector(const Loop& loop,
-                        std::vector<NodePtr>& frame_nodes,
-                        std::vector<EdgePtr>& frame_edges);
 };
 
 #endif //TQEC_OPTIMIZER_MODULE_FACTORY_HPP

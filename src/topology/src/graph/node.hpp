@@ -62,7 +62,7 @@ public:
     }
 
     void move(const double diff_x, const double diff_y, const double diff_z) {
-        pos_.assign(this->pos_.x - diff_x, this->pos_.y - diff_y, this->pos_.z - diff_z);
+        pos_.assign(this->pos_.x + diff_x, this->pos_.y + diff_y, this->pos_.z + diff_z);
     }
 };
 

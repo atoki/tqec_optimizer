@@ -27,10 +27,10 @@ private:
     int cap_num_;
 
     std::vector<int> cross_ids_;
-    std::vector<NodePtr> nodes_;
+    std::vector<NodePtr> nodes_; // <- 注意!使えない!
     std::vector<NodePtr> frame_nodes_;
     std::vector<NodePtr> cross_nodes_;
-    std::vector<EdgePtr> edges_;
+    std::vector<EdgePtr> edges_; // <- 注意!使えない!
     std::vector<EdgePtr> frame_edges_;
     std::vector<EdgePtr> cross_edges_;
 
@@ -133,7 +133,10 @@ public:
             const double diff_x = pos.x - pos_.x;
             const double diff_y = pos.y - pos_.y;
             const double diff_z = pos.z - pos_.z;
-            for (auto& node : nodes_) {
+            for (auto& node : frame_nodes_) {
+                node->move(diff_x, diff_y, diff_z);
+            }
+            for (auto& node : cross_nodes_) {
                 node->move(diff_x, diff_y, diff_z);
             }
             update();

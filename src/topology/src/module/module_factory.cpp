@@ -6,7 +6,6 @@ Module ModuleFactory::Create(const Loop& loop) {
 
     CreateFrame(loop, frame_nodes, frame_edges);
     CreateCross(loop, cross_nodes, cross_edges);
-    CreateInjector(loop, frame_nodes, frame_edges);
 
     return Module(loop.id(), loop.cross_list(),
                   frame_nodes, cross_nodes,
@@ -19,32 +18,30 @@ void ModuleFactory::CreateFrame(const Loop& loop,
     const int id = loop.id();
     const std::string type = loop.type();
     const int cross_edge_num = std::max(1, static_cast<int>(loop.cross_list().size()));
-    const int injector_num = std::max(0, (loop.pin_num() + loop.cap_num() - 1));
-    const int frame_length = cross_edge_num + injector_num;
-    NodePtr node1, node2;
-    Vector3D pos = Vector3D(0, 0, 0);
+    const int injector_num = loop.pin_num() + loop.cap_num();
+    const int frame_length = cross_edge_num + std::max(0, injector_num - 1);
+
+    NodePtr upper_node1, upper_node2, lower_node1, lower_node2;
+    Vector3D upper_pos = Vector3D(0, 2, 0);
+    Vector3D lower_pos = Vector3D(0, 0, 0);
 
     // create frame
-    frame_nodes.push_back(node1 = std::make_shared<Node>(id, pos, type));
-    pos.add(0, 2, 0);
-    node2 = node1;
-    frame_nodes.push_back(node1 = std::make_shared<Node>(id, pos, type));
-    frame_edges.push_back(std::make_shared<Edge>(id, "edge", node1, node2));
+    frame_nodes.push_back(upper_node1 = std::make_shared<Node>(id, upper_pos, type));
+    frame_nodes.push_back(lower_node1 = std::make_shared<Node>(id, lower_pos, type));
+    frame_edges.push_back(std::make_shared<Edge>(id, "edge", upper_node1, lower_node1));
+
     for (int n = 0; n < frame_length; ++n) {
-        pos.add(0, 0, 2);
-        node2 = node1;
-        frame_nodes.push_back(node1 = std::make_shared<Node>(id, pos, type));
-        frame_edges.push_back(std::make_shared<Edge>(id, "edge", node1, node2));
-    }
-    pos.add(0, -2, 0);
-    node2 = node1;
-    frame_nodes.push_back(node1 = std::make_shared<Node>(id, pos, type));
-    frame_edges.push_back(std::make_shared<Edge>(id, "edge", node1, node2));
-    for (int n = 0; n < frame_length - 1; ++n) {
-        pos.add(0, 0, -2);
-        node2 = node1;
-        frame_nodes.push_back(node1 = std::make_shared<Node>(id, pos, type));
-        frame_edges.push_back(std::make_shared<Edge>(id, "edge", node1, node2));
+        upper_pos.z += 2;
+        lower_pos.z += 2;
+        upper_node2 = upper_node1;
+        lower_node2 = lower_node1;
+        frame_nodes.push_back(upper_node1 = std::make_shared<Node>(id, upper_pos, type));
+        frame_nodes.push_back(lower_node1 = std::make_shared<Node>(id, lower_pos, type));
+        frame_edges.push_back(std::make_shared<Edge>(id, "edge", upper_node1, upper_node2));
+        frame_edges.push_back(std::make_shared<Edge>(id, "edge", lower_node1, lower_node2));
+        if (injector_num > 0 && n >= cross_edge_num - 1) {
+            frame_edges.push_back(std::make_shared<Edge>(id, "injector", upper_node1, lower_node1));
+        }
     }
 
     return;
@@ -63,31 +60,6 @@ void ModuleFactory::CreateCross(const Loop& loop,
         cross_edges.push_back(std::make_shared<Edge>(cross_id, "edge", joint1, joint2));
         pos1.add(0, 0, 1);
         pos2.add(0, 0, 1);
-    }
-
-    return;
-}
-
-void ModuleFactory::CreateInjector(const Loop& loop,
-                                   std::vector<NodePtr>& frame_nodes,
-                                   std::vector<EdgePtr>& frame_edges) {
-    const int id = loop.id();
-    const std::string type = loop.type();
-    const int cross_edge_num = std::max(1, static_cast<int>(loop.cross_list().size()));
-    const int injector_num = std::max(0, (loop.pin_num() + loop.cap_num() - 1));
-    const int length = 2 * (cross_edge_num + injector_num);
-    Vector3D pos1 = Vector3D(0, 0, length);
-    Vector3D pos2 = Vector3D(0, 2, length);
-
-    for (int n = 1; n < injector_num + 1; ++n) {
-        pos1.add(0, 0, -n * 2);
-        pos2.add(0, 2, -n * 2);
-        auto node1 = std::find_if(frame_nodes.begin(), frame_nodes.end(),
-                                  [&pos1](const auto& node) { return node->pos() == pos1; });
-        auto node2 = std::find_if(frame_nodes.begin(), frame_nodes.end(),
-                                  [&pos2](const auto& node) { return node->pos() == pos2; });
-        assert(node1 == frame_nodes.end() || node2 == frame_nodes.end());
-        frame_edges.push_back(std::make_shared<Edge>(id, "injector", **node1, **node2));
     }
 
     return;
