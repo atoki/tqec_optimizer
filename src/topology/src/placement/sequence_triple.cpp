@@ -3,9 +3,12 @@
 
 #include "sequence_triple.hpp"
 
-SequenceTripe::SequenceTripe(std::vector<Module> module_list){
+SequenceTripe::SequenceTripe(std::vector<Module> module_list)
+        : module_list_(module_list) {
     std::vector<int> axis(3, 0);
-    for (Module& module : module_list_) {
+    for (Module& module : module_list) {
+        std::cout << "id: ";
+        std::cout << module.id() << std::endl;
         permutation1_.push_back(module.id());
         permutation2_.push_back(module.id());
         permutation3_.push_back(module.id());
@@ -116,6 +119,7 @@ void SequenceTripe::Shift() {
         int p2_index = std::distance(c_permutation2_.begin(), iter2);
 
         // elementを右シフト in c_permutation1
+        // shift_size1が配列長を超過している場合の対処
         if (p1_index + shift_size1 > size) {
             shift_size2 -= std::max(0, (p1_index + shift_size1) - size);
         }
@@ -124,6 +128,7 @@ void SequenceTripe::Shift() {
         c_permutation1_.insert(c_permutation1_.begin() + shift_size1, element);
 
         // elementを右シフト in c_permutation2
+        // shift_size1が配列長を超過している場合の対処
         if (p2_index + shift_size2 > size) {
             shift_size2 -= std::max(0, (p2_index + shift_size2) - size);
         }
@@ -138,6 +143,7 @@ void SequenceTripe::Shift() {
         int p3_index = std::distance(c_permutation3_.begin(), iter2);
 
         // elementを右シフト in c_permutation1
+        // shift_size1が配列長を超過している場合の対処
         if (p1_index + shift_size1 > size) {
             shift_size2 -= std::max(0, (p1_index + shift_size1) - size);
         }
@@ -146,6 +152,7 @@ void SequenceTripe::Shift() {
         c_permutation1_.insert(c_permutation1_.begin() + shift_size1, element);
 
         // elementを右シフト in c_permutation3
+        // shift_size1が配列長を超過している場合の対処
         if (p3_index + shift_size2 > size) {
             shift_size2 -= std::max(0, p3_index + shift_size2 - size);
         }
@@ -160,6 +167,7 @@ void SequenceTripe::Shift() {
         int p3_index = std::distance(c_permutation3_.begin(), iter2);
 
         // elementを右シフト in c_permutation2
+        // shift_size1が配列長を超過している場合の対処
         if (p2_index + shift_size1 > size) {
             shift_size2 -= std::max(0, p2_index + shift_size1 - size);
         }
@@ -168,6 +176,7 @@ void SequenceTripe::Shift() {
         c_permutation2_.insert(c_permutation2_.begin() + shift_size1, element);
 
         // elementを右シフト in c_permutation3
+        // shift_size1が配列長を超過している場合の対処
         if (p3_index + shift_size2 > size) {
             shift_size2 -= std::max(0, p3_index + shift_size2 - size);
         }
@@ -180,6 +189,25 @@ void SequenceTripe::Shift() {
 }
 
 void SequenceTripe::Rotate() {
+    const int size = permutation1_.size();
+    std::mt19937 engine;
+    std::uniform_int_distribution<int> distribution(0, size - 1);
+    std::uniform_int_distribution<int> pd(1, 3);
+    const int rotate_module_index = distribution(engine);
+    const int axis = pd(engine);
+    const int rotate_module_id = c_permutation1_[rotate_module_index].id();
+
+    // X軸回転
+    if (axis == 1) {
+        c_rotate_map_[rotate_module_id][0]++;
+    }
+    else if (axis == 2) {
+        c_rotate_map_[rotate_module_id][1]++;
+    }
+    else {
+        c_rotate_map_[rotate_module_id][2]++;
+    }
+
     return;
 }
 
