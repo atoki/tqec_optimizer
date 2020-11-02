@@ -53,14 +53,14 @@ class Relocation:
         # 配置決定の所要時間
         elapsed_time = time.time() - start
         print("placement is completed")
-        print("配置所要時間: {}".format(elapsed_time))
+        # print("配置所要時間: {}".format(elapsed_time))
         start = time.time()
 
         # 各辺に対するidの割当を決定
         Allocation(result, self._cross_id_set).execute()
         elapsed_time = time.time() - start
         print("allocation is completed")
-        print("Label割当所要時間: {}".format(elapsed_time))
+        # print("Label割当所要時間: {}".format(elapsed_time))
         start = time.time()
         graph = self.__to_graph(result)
 
@@ -68,14 +68,14 @@ class Relocation:
         route_pair = TSP(graph, result).search()
         elapsed_time = time.time() - start
         print("TSP is completed")
-        print("接続部割当所要時間: {}".format(elapsed_time))
+        # print("接続部割当所要時間: {}".format(elapsed_time))
         start = time.time()
 
         # 各ネットの結ぶ経路の決定
         Routing(graph, result, route_pair).execute()
         elapsed_time = time.time() - start
         print("routing is completed")
-        print("配線所要時間: {}".format(elapsed_time))
+        # print("配線所要時間: {}".format(elapsed_time))
 
         # injectorを復元
         self.__add_injector(graph)
@@ -120,7 +120,7 @@ class Relocation:
                     place.recover()
             t *= cool_rate
 
-        print("試行回数: {}".format(count))
+        # print("試行回数: {}".format(count))
         return result
 
     @staticmethod
